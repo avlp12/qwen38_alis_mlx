@@ -97,6 +97,8 @@ docs/
                            427 -> 733 tok/s, server integration
   kl-tiers.md              the tier chart: exact KL vs size for 10 builds (ours + community),
                            the byte-identity cross-check, and per-Mac tier guidance
+  speed-journey.md         every prefill/decode attempt in one table - baselines,
+                           adoptions, opt-ins, and the six rejections with diagnoses
   methodology.md           every measurement rule, each with the incident that bought it
   external-dossiers.md     mlx-dspark, AtomicChat, vLLM/B70, llama.cpp, MTPLX — what
                            the ecosystem measured and what I took from it
