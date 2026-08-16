@@ -1,12 +1,13 @@
-# Speculative decoding — two paths, one reversal, and the operating point that survived
+# Speculative decoding — two paths, two reversals, and the operating point that survived
 
 Two speculative paths run on this model in the fork: **MTP self-speculation**
 (the checkpoint's own 31-tensor multi-token-prediction head — no extra download)
 and the **DSpark drafter** (`RadixArk/Qwen3.8-27B-DSpark`, an external 1.359B
 block-diffusion drafter trained against this checkpoint). This document is the
 story of how DSpark went from "rejected, 0.73x" to "the production
-recommendation, 1.91x on English/code/math" — with every wrong verdict along the
-way kept on the record. Ledger nodes `[I#]`/`[CA#]`/`[PA#]`:
+recommendation, 1.91x" — and then how the EOS-cut protocol audit retracted that
+headline too, leaving the gated MTP path in front (§6) — with every wrong
+verdict along the way kept on the record. Ledger nodes `[I#]`/`[CA#]`/`[PA#]`:
 [LEDGER.md](LEDGER.md).
 
 ## 1. The port, and what parity does not prove
@@ -106,7 +107,7 @@ kernel, not an independent lever `[I33]`) and `defer_sync` (+1.9%, output
 bit-identical `[I34]`). With all fixes, the step budget closes at 49.9 ms
 predicted vs 49.0 measured — zero unexplained residual `[I35]`.
 
-### The numbers that stand `[I36]` `[PA12]`
+### The numbers that stood — until the protocol audit `[I36]` `[PA12]` (retracted, see §6)
 
 Measured from stock defaults after promotion
 (`max_width=8, pad_lm=True, use_conf=False, defer_sync=True, block_size=8`),
@@ -119,15 +120,16 @@ verified token-for-token:
 | MTP k=2 | 50.36 (1.34x) | 55.71 (1.48x) |
 | **DSpark** | **62.21 (1.65x)** | **71.86 (1.91x)** |
 
-DSpark is the 4-bit production recommendation; MTP k=2 is second. That is the
-*opposite* of the pre-reversal verdict, and the raw records are in
-`results/out2/` (`bench3_*.json`, `dspark_*.json`).
+DSpark became the 4-bit production recommendation, MTP k=2 second — the
+*opposite* of the pre-reversal verdict. The raw records are in
+`results/out2/` (`bench3_*.json`, `dspark_*.json`). **This table is kept as
+the record of what was published, not as current numbers: §6 restates it under
+the EOS-cut protocol (`[J7]`), and the ordering reverses again.**
 
-**The honest exception:** on Korean alone, **both** paths are slower than plain
-(plain 37.6 / MTP 34.3 / DSpark 33.3) — the cause is not yet decomposed, and the
-operational rule is to disable speculation for Korean workloads `[PA13]`. Also
-still open from `[PA13]`: an 8-bit-target reproduction and drafter-context
-growth beyond 32k (verified harmless to 2.4k).
+**What was then read as the honest exception:** on Korean alone, both paths
+measured slower than plain (plain 37.6 / MTP 34.3 / DSpark 33.3), and the
+operational rule became "disable speculation for Korean" `[PA13]` — a rule §6
+repeals: it too was a protocol artifact.
 
 ## 5. The EOS contamination incident
 
@@ -156,16 +158,67 @@ drafter's `hidden_norm` absorbs it `[I42]`; per-tap rescale left 97.1% of draft
 blocks unchanged `[I47]`). The planned MTP-head realignment was cancelled for
 the best possible reason: there was no regression left to fix `[PA16]`.
 
-## 6. Where MTP goes next — three levers, measurement in progress
+The audit's final reach came later, and it was the largest: applied
+retroactively to the §4 headline itself, the EOS-cut protocol retracted it
+(`[J7]` — §6).
 
-The shipped MTP recommendation is k=2. Three levers say the ceiling is higher,
-each with external corroboration
-([external-dossiers.md](external-dossiers.md)): deeper k (vLLM-side recipes ship
-MTP-3 for this model and Intel Arc B70 reports credit MTP-4 with +35-50%),
-rejection-sampling acceptance at real serving temperatures (the MTPLX runtime
-advertises up to 2.24x at temp 0.6 with exact rejection sampling; the fork
-already carries `spec_temp`), and longer-form generation arms. A full sweep —
-k in {2,3,4} x {greedy t0, rejection t0.6} x {240, 1024 tokens} x 4 workloads,
-under the corrected EOS/pairing protocol, plus a paired bf16-vs-4bit MTP-head
-acceptance probe — is running as this repository goes up; results will be
-committed when they land, whichever way they point.
+## 6. The sweep landed: the headline restates, the gate wins, Korean flips `[J7]`
+
+The sweep promised here ran to completion, and its first finding was
+retroactive: under the corrected protocol — EOS-cut, long-form four-prompt set
+(so every scored token is genuine answer decode), medians of 3 for sampled
+rows, stop-detection outside the timed loop — **the §4 headline does not
+reproduce**. 62.21/50.36 were protocol artifacts, dominated by the math
+prompt's post-EOS self-copy (acceptance 4.53). The ruling is ledger
+`[I78]`/`[J7]`; re-running the original conditions still reproduces 60.2, so
+the code did not regress — the protocol did. Restated, greedy, 4-bit build:
+
+| configuration (greedy) | tok/s | vs plain |
+|---|---|---|
+| plain | 37.6 | 1.00 |
+| DSpark (block 8) | 48.3 | 1.28x |
+| MTP k=2 | 46.8 | 1.24x |
+| **MTP k=4 + `min_draft_p` 0.6** | **52.8** | **1.40x** |
+
+Three verdicts out of the sweep (`[I70]`-`[I79]`):
+
+- **Ungated depth loses; the p-gate is the winning lever.** Bare k degrades
+  monotonically past 2; `min_draft_p 0.6` makes k=4 the fastest configuration
+  by letting uncertain stretches degenerate to near-plain steps while confident
+  stretches run the full chain `[I72]`. MTP-head precision is a non-lever
+  (bf16 vs 4-bit head: CIs include zero at every k `[I70]`).
+- **The ordering reversed again — by protocol this time, not code.** DSpark's
+  EOS-era lead evaporates EOS-cut; the gated in-weights MTP path leads it.
+- **The Korean rule is repealed.** "Disable speculation for Korean" was an
+  artifact of the broken protocol. Gated MTP is +34% greedy and +27–31% under
+  real sampling on Korean `[I79]`. DSpark alone stays at-or-below plain there
+  (pending-carry rollback structure; the capture-and-rerun port from
+  mlx-dspark is the suspected fix, unstarted).
+
+And the first **real-world numbers** — Qwen's shipped sampling defaults
+(temp 1.0 · top-p 0.95 · top-k 20), with truncated rejection sampling running
+target and draft through the same temperature/top-p/top-k chain, so the
+requested output distribution is preserved exactly (TV ≤ 0.0014 against a
+synthetic oracle; 160/160 greedy-limit match; fork commit `58ae6ec`) `[I76]`:
+
+| configuration (temp 1.0 · top-p 0.95 · top-k 20) | 240 tok | 1024 tok |
+|---|---|---|
+| plain, sampler on | 37.16 (1.00) | 36.91 (1.00) |
+| DSpark | 41.94 (1.13x) | 39.95 (1.08x) |
+| MTP k=2 | 47.74 (1.28x) | 44.10 (1.19x) |
+| **MTP k=4 + `min_draft_p` 0.6** | **48.05 (1.29x)** | **45.13 (1.22x)** |
+
+The sampler costs plain decode only 1.2%; the greedy-to-sampled toll on the
+gated path is 0.11 on the multiplier `[I77]`. The 8-bit-target reproduction
+landed with the sweep: plain 21.8, MTP k=2 31.1 (1.42x), DSpark 33.6 (1.54x)
+at its kernel-less optimum, block 4 — larger ratios on a slower plain, still
+below 4-bit plain in absolute terms `[I73]`. Raw records:
+`results/spec_restate/`.
+
+**The operating point that survived** `[PA27]`: `mtp_num_draft_tokens=4,
+min_draft_p=0.6`, adding `spec_temp=1.0, spec_top_k=20, spec_top_p=0.95` under
+the shipped sampling defaults. One demotion travels with the restatement:
+cross-stack speculative comparisons (the "+24%" of the mlx-dspark dossier) do
+not survive it — **protocol differences dominate cross-stack comparisons**, so
+treat any such delta as protocol-confounded unless both stacks run one harness
+([external-dossiers.md](external-dossiers.md)).

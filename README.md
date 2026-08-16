@@ -23,20 +23,38 @@ All measured, all reproducible from [results/](results/) and
 
 | axis | from | to | record |
 |---|---|---|---|
-| decode, 4-bit, plain | 37.6 tok/s | — | `results/out2/bench3_q4awq3m.json` |
-| decode, MTP k=2 (self-spec, no extra download) | 37.6 | **50.4** (4-prompt avg) / 55.7 (en/code/math) | same |
-| decode, DSpark drafter (block 8, promoted defaults) | 37.6 | **62.2** (4-prompt avg) / **71.9** (en/code/math) | same |
+| decode, 4-bit, plain | 37.6 tok/s | — | `results/spec_restate/greedy_regress.json` |
+| decode, MTP k=2 (self-spec, no extra download) | 37.6 | **46.8** (1.24x) | same |
+| decode, **gated MTP k=4 + `min_draft_p` 0.6** — the recommendation | 37.6 | **52.8** (1.40x) | same |
+| decode, DSpark drafter (block 8) | 37.6 | **48.3** (1.28x) | same |
+| decode under shipped sampling (temp 1.0 · top-p 0.95 · top-k 20), gated MTP | 37.2 | **48.1** at 240 tok (1.29x) / **45.1** at 1024 (1.22x) | `results/spec_restate/samp_240.json` / `samp_1024.json` |
 | prefill 8K, one box → two boxes (bitwise-identical output) | 427 tok/s | **733.5** (1.72x) | `results/bench_2box/results_2box.json` |
 | prefill 32K, one box → two boxes | 388 | **733.6** (1.89x) | same + `bonus32k.json` |
 | served TTFT, 8.3K-token streaming request | 20.3 s | **11.9 s** (1.705x) | `results/bench_2box/serving_verdict.json` |
 | quality, 8-bit vs bf16 (corpus PPL, paired, ≈103K tokens) | — | statistically indistinguishable on en / ko / code | `results/ppl_verdict.json` |
 | quality, 4-bit AWQ vs uniform 4-bit | — | better on all three slices; recovers 48.7% / 26.9% / 14.7% of the gap to 8-bit (en / ko / code) | same |
 
-Both speculative paths are lossless (token-identical to plain greedy, checked,
-not assumed). The speculative rows average four fixed prompts — chat, code,
-math, Korean — because single-prompt speculative numbers overstate badly (the
-same build spans 33.3 to 91.5 tok/s across those prompts; see the honesty
-section for the Korean column specifically).
+> **Correction (2026-08-16, retroactive).** The speculative rows previously read
+> MTP k=2 **50.4** / DSpark **62.2** (71.9 on English prompts). Those figures
+> came from a harness that did not stop at end-of-sequence — the math prompt's
+> post-EOS self-copy inflated acceptance to 4.53 and carried the headline — and
+> are retracted; the ruling is ledger `[J7]`/`[I78]`
+> ([docs/LEDGER.md](docs/LEDGER.md)). The table now carries the EOS-cut
+> protocol: long-form four-prompt set (chat/code/math/Korean), medians of 3 for
+> sampled rows, stop-detection outside the timed loop. Under it the ordering
+> reversed — the gated in-weights MTP path leads and DSpark trails — and the
+> "no speculation for Korean" rule is repealed: gated MTP gains **+27–31% on
+> Korean** under real sampling `[I79]`. Details in
+> [docs/speculative.md](docs/speculative.md) §6.
+
+Speculation stays lossless in both regimes: greedy reproduces the plain stream
+(equality-checked; residual divergence is confined to verification-batch
+floating-point ties that a non-speculative control reproduces at the same
+positions `[I80]`), and sampled decoding preserves the client-requested
+distribution exactly via truncated rejection sampling (TV ≤ 0.0014 against a
+synthetic oracle, 160/160 in the greedy limit `[I76]`). The speculative rows
+average four fixed prompts — chat, code, math, Korean — because single-prompt
+speculative numbers are upper bounds, not results.
 
 ## The builds (Hugging Face)
 
@@ -45,7 +63,7 @@ original bf16 bytes) and the vendor MTP head (31 tensors)**:
 
 - [avlp12/Qwen3.8-27B-Alis-MLX-8bit](https://huggingface.co/avlp12/Qwen3.8-27B-Alis-MLX-8bit) — 27.9 GB, 21.8 tok/s; indistinguishable from bf16 on every corpus slice
 - [avlp12/Qwen3.8-27B-Alis-MLX-6bit](https://huggingface.co/avlp12/Qwen3.8-27B-Alis-MLX-6bit) — 21.5 GB, 27.3 tok/s; the balanced default, Korean PPL indistinguishable from bf16
-- [avlp12/Qwen3.8-27B-Alis-MLX-4bit](https://huggingface.co/avlp12/Qwen3.8-27B-Alis-MLX-4bit) — 15.2 GB, 37.5 tok/s plain / 62.2 speculative; AWQ recipe; the reach build for 24-32 GB Macs, with a real, documented quality cost
+- [avlp12/Qwen3.8-27B-Alis-MLX-4bit](https://huggingface.co/avlp12/Qwen3.8-27B-Alis-MLX-4bit) — 15.2 GB, 37.5 tok/s plain / 52.8 with gated MTP speculation; AWQ recipe; the reach build for 24-32 GB Macs, with a real, documented quality cost
 
 On the preservation claim, a correction (2026-08-16): my 2026-08-15 survey reported "all 12 surveyed builds carried 0 vision tensors" — that count used the wrong key pattern (`.visual.`), which misses the `vision_tower.*` naming that mlx-vlm-family conversions use. A follow-up census of 283 MLX-tagged repos found `mlx-community` builds preserving the vision tower (333 tensors, 0 MTP), and other builds carrying **both** subsystems, the earliest published 17 hours before mine. So: no "first" and no "only". What this repo guarantees is its own verified pass-through — byte-identical vision tensors, a quantized MTP head, and end-to-end image + speculative-decoding checks — with the mechanism and receipts in [docs/conversion-integrity.md](docs/conversion-integrity.md).
 
@@ -69,8 +87,8 @@ docs/
                            the MTP double-shift, and the discriminator principle
   kernels.md               small-M quantized GEMM (mlx#4265), the split-K MMA journey,
                            SDPA hd256 fusion, and the prefill accounting that closed
-  speculative.md           DSpark port, the head-wiring accident, the reversed verdict,
-                           the EOS incident, and the operating point that survived
+  speculative.md           DSpark port, the head-wiring accident, two reversed verdicts
+                           (kernel, then EOS protocol), and the operating point that survived
   two-box.md               TB5 layer-pipelined prefill: bubble law, bitwise proof,
                            427 -> 733 tok/s, server integration
   methodology.md           every measurement rule, each with the incident that bought it
@@ -119,23 +137,33 @@ script pins the fork on `sys.path` and **fails loudly if stock mlx-lm resolves**
 
 Numbers this repository does *not* claim, and work still open:
 
-- **Korean is a net loss for both speculative paths** — plain 37.6 vs MTP 34.3
-  and DSpark 33.3 tok/s. The cause is not yet decomposed; the operational rule
-  is to run Korean workloads plain. The most promising structural fix is the
-  capture-and-rerun rollback ported from mlx-dspark
-  ([docs/external-dossiers.md](docs/external-dossiers.md)), unstarted.
-- **The MTP sweep is in progress** — k in {2,3,4} x {greedy, rejection t0.6} x
-  {240, 1024 tokens} x 4 workloads under the corrected EOS/pairing protocol,
-  plus a paired bf16-vs-4bit MTP-head acceptance probe. Results will be
-  committed when they land, whichever way they point; until then k=2 is the
-  shipped recommendation and deeper-k gains are a hypothesis with external
-  corroboration only.
-- **Unmeasured / unresolved**, from the ledger: the 8-bit-target reproduction of
-  the DSpark result; drafter-context growth beyond 32k (verified harmless to
-  2.4k); the fair block-7-with-cap-7 vs block-8 A/B (`[I68]` — my b8-over-b7
-  result was partly a draft-count confound); the converter still leaving AWQ
-  MTP heads in bf16 (`[PA18]`, interim tool shipped); the KL comparison against
-  the mlx-vlm community builds (running).
+- **The Korean verdict reversed, and the wrong rule stays on the record.**
+  Under the retracted protocol I published "run Korean workloads plain"; the
+  EOS-cut re-measurement repealed it — gated MTP is +34% greedy and +27–31%
+  under real sampling on Korean (`[I79]`). What still holds: **DSpark alone
+  stays at-or-below plain on Korean** under real sampling. Its pending-carry
+  rollback is the suspected structure, and the capture-and-rerun port from
+  mlx-dspark ([docs/external-dossiers.md](docs/external-dossiers.md)) remains
+  the unstarted fix.
+- **The MTP sweep landed, retroactively cutting my own headline** — the
+  promised k x sampler x length x workload sweep completed under the corrected
+  protocol, restated the speculative table (see the correction above, `[J7]`),
+  promoted gated k=4 over the shipped k=2 recommendation, and found MTP-head
+  precision to be a non-lever (bf16 vs 4-bit head: no significant difference,
+  `[I70]`). The 8-bit-target reproduction landed with it: plain 21.8, MTP k=2
+  31.1 (1.42x), DSpark 33.6 (1.54x) at its kernel-less optimum, block 4 —
+  larger ratios on a slower plain, still below 4-bit plain in absolute terms
+  (`results/spec_restate/bench_d_q8v.json`).
+- **Cross-stack comparisons are demoted.** This repository once carried "+24%
+  vs the other MLX DSpark stack"; my side of that ratio came from the retracted
+  protocol, and **protocol differences dominate cross-stack speculative
+  comparisons** — no such multiple survives unless both stacks run one harness
+  ([docs/external-dossiers.md](docs/external-dossiers.md)).
+- **Unmeasured / unresolved**, from the ledger: drafter-context growth beyond
+  32k (verified harmless to 2.4k); the fair block-7-with-cap-7 vs block-8 A/B
+  (`[I68]` — my b8-over-b7 result was partly a draft-count confound); the
+  converter still leaving AWQ MTP heads in bf16 (`[PA18]`, interim tool
+  shipped); the KL comparison against the mlx-vlm community builds (running).
 - **Vision quality is functionally checked, not evaluated** — the tower is
   byte-exact and describes a shapes probe correctly; no VQA suite was run.
 - Several published intermediate verdicts in this campaign were **wrong and are

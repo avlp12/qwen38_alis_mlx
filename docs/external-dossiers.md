@@ -17,15 +17,20 @@ port list. Ledger: `[I37]`, `[I64]`-`[I68]`, `[PA23]` in [LEDGER.md](LEDGER.md).
 **Triangulation.** Their registry advertises ≈1.7x speedup for this pairing,
 consistent with a third-party M3 Ultra report I had earlier failed to reconcile
 (58 tok/s vs raw 34.9 = 1.66x) — circumstantial attribution (bench shape and
-timing line up; no statement from the author), but the numbers cohere. On
-equivalent hardware and quant (M3 Ultra, 4-bit), my post-reversal stack measures
-71.9 tok/s over three English/code/math prompts against that 58 — **+24%** —
-and the difference has a mechanism: their README documents that on Apple
-silicon, verify cost grows with token count and caps achievable speedup at
-2-3x. That is precisely the small-M `quantized_matmul` gap
-([kernels.md](kernels.md), mlx#4265) my split-K kernel removes — they have no
-custom Metal kernel (zero `metal_kernel` call sites), so their cap-narrowing
-machinery is the optimal play *in a world that still has the slope* `[I67]`.
+timing line up; no statement from the author), but the numbers cohere. An
+earlier revision of this dossier set my then-headline 71.9 tok/s against that
+58 and claimed **+24% on equivalent hardware**. That comparison is demoted
+(2026-08-16): my 71.9 came from the since-retracted EOS-unaware protocol
+(`[J7]`, [LEDGER.md](LEDGER.md)), their 58 is a bench whose protocol I cannot
+re-run, and the rule the retraction taught is that **protocol differences
+dominate cross-stack speculative comparisons** — no cross-stack multiple
+survives unless both stacks run one harness. What survives is the mechanism,
+which is protocol-independent: their README documents that on Apple silicon,
+verify cost grows with token count and caps achievable speedup at 2-3x. That
+is precisely the small-M `quantized_matmul` gap ([kernels.md](kernels.md),
+mlx#4265) my split-K kernel removes — they have no custom Metal kernel (zero
+`metal_kernel` call sites), so their cap-narrowing machinery is the optimal
+play *in a world that still has the slope* `[I67]`.
 
 **Mutual reproduction of the draft-slice trap** `[I64]`. Their source documents
 that this head is trained anchor-as-position-0 (DeepSpec lineage) and that the

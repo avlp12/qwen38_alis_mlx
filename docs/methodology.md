@@ -69,10 +69,13 @@ invalid rather than paying the sync).
 
 **9. A single-prompt speculative number is a best case, not a result** `[PA10]`
 `[I28]`. The same MTP k=2 config read 1.41x on a code prompt alone, 1.32x over
-three English/code prompts, 1.10x over three including Korean. One build/config
-spans 33.3 to 91.5 tok/s across the four fixed prompts. Minimum three dissimilar
-workloads, report the average, name the prompts — and remember a language slice
-can invert the sign (Korean: both speculative paths lose to plain).
+three English/code prompts, 1.10x over three including Korean. Even under the
+restated EOS-cut protocol one configuration spans 32.7 to 68.3 tok/s across the
+four fixed prompts (DSpark, greedy). Minimum three dissimilar workloads, report
+the average, name the prompts — and remember a language slice can invert the
+sign *per path*: under real sampling DSpark still loses to plain on Korean
+while the gated MTP path gains 27-31% there `[I79]` — probe the slice for each
+path, not once for "speculation".
 
 **10. Judge speculation on tok/s, never on acceptance — and the trained block
 width is a reference, not a ceiling** `[I32]` `[RA12]` `[CA8]`. Block 9 accepts

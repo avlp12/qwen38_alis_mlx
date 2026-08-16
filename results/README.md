@@ -58,6 +58,24 @@ The per-token NLL arrays (`.npy`) behind these summaries are not shipped
 | `out2/eos_q4v.json` | the EOS diagnostic itself: where answers actually end inside the fixed measurement window, per configuration |
 | `out2/prefill.json` / `out2/prefill_68.json` | 2048-token prefill spot-checks across the 4-bit builds / the 6- and 8-bit builds |
 
+## Speculative restatement + real-world sampling (`spec_restate/`)
+
+The records behind the 2026-08-16 retroactive restatement of the speculative
+headline (`[J7]`/`[I78]` in the ledger): EOS-cut protocol, long-form 4-prompt
+set (chat/code/math/ko), medians of 3 for sampled rows. Scripts:
+`harness/sweep_b.py` (gate/depth sweep), `harness/bench_sampling.py`
+(real-world sampling + greedy regression), `harness/bench_d.py` (8-bit target),
+`harness/calib_regress.py` (rejection-sampling losslessness calibration).
+
+| file | what it is |
+|---|---|
+| `spec_restate/greedy_regress.json` | the canonical greedy table on the 4-bit build: plain 37.6 / DSpark 48.3 / MTP k=2 46.8 / gated MTP k=4 52.8 |
+| `spec_restate/samp_240.json` / `samp_1024.json` | first real-world measurement — Qwen shipped defaults (temp 1.0 · top-p 0.95 · top-k 20), truncated rejection sampling, 3 reps per cell |
+| `spec_restate/gate_240.json` / `gate_1024.json` | the `min_draft_p` gate sweep that found the winning lever (`[I72]`) |
+| `spec_restate/sweep_1024.json` | the ungated depth/rejection sweep (bare k monotonically loses past 2, `[I71]`) |
+| `spec_restate/bench_d_q8v.json` | the 8-bit-target reproduction: plain 21.8, MTP k=2 1.42x, DSpark 1.54x at block 4 (`[I73]`) |
+| `spec_restate/calib_regress.json` | truncated rejection-sampling validation: synthetic-oracle TV, greedy-limit equality, defer/sync bitwise checks (`[I76]`) |
+
 ## Two-box prefill (`bench_2box/`)
 
 | file | what it is |
