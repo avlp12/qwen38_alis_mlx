@@ -307,9 +307,16 @@ on-policy self-distillation of the vendor head against the quantized model's
 own hidden states) cleared its gate locally: at the production operating
 point (k=4 + gate 0.6, greedy) the realigned head runs **+6.1%**
 (57.25 → 60.75 tok/s in that harness's frame), drift control ±0.2%, 3/4
-prompts individually significant. It ships nowhere yet: Korean reads −1.7%
-and the t1 regime is unmeasured, so the published 4-bit build keeps the
-vendor head until both survive a re-adjudication (`[PA38]`). Two harness
+prompts individually significant. The two conditions `[PA38]` attached —
+the t1 regime and Korean — were then re-adjudicated in a same-process paired
+head-swap (`[I106]`): t1 pooled across 24 cells reads **+1.27 tok/s
+(t = 2.26)**, and the Korean worry inverted — Korean improves in 3 of 4 arms
+(+4.8..+16.1%, long-form greedy the largest), the sole regression being a
+single deterministic short-greedy trajectory at −1.9% (`[RA21]`). On that
+basis the realigned head **shipped**: the published 4-bit build's `main` now
+carries it (HF commit 739a5587, byte-verified against the local artifact by
+LFS sha256), and the vendor-original head is preserved on the `pre-align`
+branch (`[PA40]`). Two harness
 incidents en route are preserved in the ledger — an oracle comparing two
 different weight sources (`[I103]`: *an oracle's two arms must share
 weights before it can measure wiring*) and a suffix-match miss that fed a
