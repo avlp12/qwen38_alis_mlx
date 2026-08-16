@@ -144,3 +144,25 @@ production path rather than a greedy-only story (the fork's `spec_temp`
 machinery; sweep in progress). Their 2.24x headline at depth 3 is also a
 second independent hint that my k=2 default is conservative — same hypothesis
 as dossier 3, testing now.
+
+## 0xBakeer — one DGX Spark, 7.88 → 75 tok/s solo / 256 aggregate (2026-08-17)
+
+A weekend log on GB10-class hardware (~273 GB/s, compute-rich) that lands four
+independent confirmations of this repo's verdicts and one new lever. Confirms:
+"acceptance rate is a trap — mean tokens per forward pass predicts throughput"
+(k 7→14 drops acceptance 98.7→68.7% and gains 27%; the same k-economics my
+gate exists to exploit); the 4-bit prefill tax on hardware without a native
+FP4 path (7-9%, their measurement; same physics as the fp4-dominated verdict
+in kl-tiers.md); vLLM silently disabling prefix caching for hybrid-attention
+models (14-22x prefill on shared prefixes once enabled — an external sizing
+of the fresh-cache tax my MTP serving mode pays, ledger `[I98]`); and 4-bit ≈
+FP8 within 0.2% at 16 concurrent streams (batching moves the bottleneck to
+compute, so quantization stops buying speed — quality is what you are
+choosing). Their DSpark-beats-MTP ordering (46%, at *lower* acceptance, cost
+per draft token 0.046 vs 0.153) is hardware-dependent — on my
+bandwidth-limited stack the gated MTP path holds the crown — but the shared
+premise is what matters: **deep drafts win when verification is cheap.** My
+k=8 rejection was a kernel-window exit (verify width 9 leaves the split-K
+M∈[6,8] window, `[RA20]`), not draft economics — so widening the kernel to
+M≤16 and re-sweeping k=8-12 is the follow-up this dossier funds, and the
+answer to the coverage question upstream in mlx#4265.
