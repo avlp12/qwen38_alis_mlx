@@ -53,10 +53,7 @@ tensors** (including repos named `-vision`; 7 of 12 shipped an image
 preprocessor config next to weights that cannot process an image). mlx-vlm-based
 `mlx-community` conversions that preserve the tower appeared around the same
 time (created 2026-08-14) and were missed by that survey's search — but those
-drop the **MTP head** (0 of 31 tensors). To my knowledge these three builds are
-the only ones preserving **both** subsystems, which is what the pass-through
-mechanism here exists to guarantee — see
-[docs/conversion-integrity.md](docs/conversion-integrity.md).
+drop the **MTP head** (0 of 31 tensors). A 2026-08-16 census of 283 MLX-tagged repos found other builds carrying both subsystems as well (the earliest 17 hours before mine), and an earlier "only vision-preserving" claim I made counted with the wrong key pattern (`.visual.` misses the `vision_tower.*` naming mlx-vlm-family builds use). This repo's guarantee is therefore its own verified pass-through — byte-identical vision tensors, quantized MTP head, and end-to-end image + speculative decoding checks — not exclusivity.md](docs/conversion-integrity.md).
 
 ## Upstream contributions
 
