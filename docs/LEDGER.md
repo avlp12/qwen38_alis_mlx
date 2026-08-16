@@ -670,3 +670,19 @@ gesicht ~/venv_mlxjit: brew py3.14 --system-site-packages + ~/qwen38/mlx-0.32.0.
   `._*`/`.DS_Store` 제외 재검증(archive_verify2.sh)으로 해소. nas-archive.sh 는 이미
   양측 제외 내장(NAS 캠페인 교훈) — **검증 스크립트 신설 시 기존 러너의 제외 목록을
   상속할 것**. 안전 설계(불일치=원본 유지)는 의도대로 작동했다.
+
+## KL 티어 스윕 종결 (2026-08-16)
+
+- **[I89]** 전-어휘 정확 KL 스윕 10빌드 완주(bf16 참조, ctx2048 대응창, 512블록 SE, 스킵 0):
+  q8awq3 0.00172 < q8v 0.00184 ≪ q6awq3 0.00591 < q6v 0.00664 ≪ q4awq3m 0.06536 <
+  q4v 0.07626 < nvfp4 0.09621 < mxfp4 0.14374 (top-1 98.6→86.4%). AWQ가 전 비트폭에서
+  uniform 우세(8bit는 ko만 유의: 0.00124 vs 0.00169). 게시 4bit의 KL 마진 −14.3%.
+- **[I90]** mlx-community 4bit·8bit는 우리 uniform 빌드와 **바이트 동일**(lm_head+무작위
+  10/10 텐서; affine gs64는 결정적) — KL 동일 행이 실측 정합이며, 독립 파이프라인 일치가
+  측정 사슬 전체의 공짜 교차 검증. 차트의 uniform 점 = 커뮤니티 기준선.
+- **[RA17]** [I89]에서: fp4 포맷은 이 크기점에서 지배당함 — nvfp4는 동급 디스크에
+  게시 4bit 대비 KL 1.47×, mxfp4는 1GB 절약에 2.2×. Apple silicon엔 fp4 매트멀 유닛이
+  없어 포맷의 존재 이유가 성립 안 함. affine int4+AWQ가 품질/GB 전선에서 엄격 우위.
+- **[PA30]** 게시: 리포 docs/kl-tiers.md + 차트(2f1ba57), HF 카드 3장 KL 절 추가
+  (4537dae/19720d0/a71171b). 6bit AWQ(−11% KL)·8bit AWQ(ko 유의)는 기록만 — 게시 교체
+  여부는 열린 질문으로 보존(측정 자산 results/kl_out/, 재판정 비용 낮음).
