@@ -1,0 +1,24 @@
+{"prompt": "chat", "regime": "greedy", "rep": 0, "completion_tokens": 240, "n_chunks": 231, "ttft_s": 0.5655, "decode_s": 6.3915, "decode_tps": 37.394, "finish_reason": "length", "text": "", "arm": "plain"}
+{"prompt": "code", "regime": "greedy", "rep": 0, "completion_tokens": 240, "n_chunks": 241, "ttft_s": 0.4482, "decode_s": 6.4012, "decode_tps": 37.337, "finish_reason": "length", "text": "", "arm": "plain"}
+{"prompt": "math", "regime": "greedy", "rep": 0, "completion_tokens": 240, "n_chunks": 215, "ttft_s": 0.6962, "decode_s": 6.4025, "decode_tps": 37.329, "finish_reason": "length", "text": "", "arm": "plain"}
+{"prompt": "ko", "regime": "greedy", "rep": 0, "completion_tokens": 240, "n_chunks": 240, "ttft_s": 0.5653, "decode_s": 6.4371, "decode_tps": 37.128, "finish_reason": "length", "text": "", "arm": "plain"}
+{"prompt": "chat", "regime": "t1", "rep": 0, "completion_tokens": 240, "n_chunks": 240, "ttft_s": 0.5615, "decode_s": 6.5161, "decode_tps": 36.679, "finish_reason": "length", "text": "", "arm": "plain"}
+{"prompt": "code", "regime": "t1", "rep": 0, "completion_tokens": 240, "n_chunks": 239, "ttft_s": 0.5593, "decode_s": 6.5265, "decode_tps": 36.62, "finish_reason": "length", "text": "", "arm": "plain"}
+{"prompt": "math", "regime": "t1", "rep": 0, "completion_tokens": 240, "n_chunks": 210, "ttft_s": 0.5934, "decode_s": 6.5094, "decode_tps": 36.716, "finish_reason": "length", "text": "", "arm": "plain"}
+{"prompt": "ko", "regime": "t1", "rep": 0, "completion_tokens": 240, "n_chunks": 241, "ttft_s": 0.4482, "decode_s": 6.4958, "decode_tps": 36.793, "finish_reason": "length", "text": "", "arm": "plain"}
+{"prompt": "ko", "regime": "greedy", "rep": 1, "completion_tokens": 240, "n_chunks": 240, "ttft_s": 0.5653, "decode_s": 6.4167, "decode_tps": 37.247, "finish_reason": "length", "text": "", "arm": "plain"}
+{"prompt": "math", "regime": "greedy", "rep": 1, "completion_tokens": 240, "n_chunks": 215, "ttft_s": 0.5841, "decode_s": 6.4186, "decode_tps": 37.236, "finish_reason": "length", "text": "", "arm": "plain"}
+{"prompt": "code", "regime": "greedy", "rep": 1, "completion_tokens": 240, "n_chunks": 241, "ttft_s": 0.4539, "decode_s": 6.4058, "decode_tps": 37.31, "finish_reason": "length", "text": "", "arm": "plain"}
+{"prompt": "chat", "regime": "greedy", "rep": 1, "completion_tokens": 240, "n_chunks": 231, "ttft_s": 0.4541, "decode_s": 6.4028, "decode_tps": 37.327, "finish_reason": "length", "text": "", "arm": "plain"}
+{"prompt": "ko", "regime": "t1", "rep": 1, "completion_tokens": 240, "n_chunks": 240, "ttft_s": 0.5508, "decode_s": 6.5006, "decode_tps": 36.766, "finish_reason": "length", "text": "", "arm": "plain"}
+{"prompt": "math", "regime": "t1", "rep": 1, "completion_tokens": 240, "n_chunks": 222, "ttft_s": 0.5799, "decode_s": 6.504, "decode_tps": 36.747, "finish_reason": "length", "text": "\n\nThe train’s constant speed is found from the", "arm": "plain"}
+{"prompt": "code", "regime": "t1", "rep": 1, "completion_tokens": 240, "n_chunks": 241, "ttft_s": 0.4602, "decode_s": 6.4899, "decode_tps": 36.827, "finish_reason": "length", "text": "", "arm": "plain"}
+{"prompt": "chat", "regime": "t1", "rep": 1, "completion_tokens": 240, "n_chunks": 241, "ttft_s": 0.559, "decode_s": 6.4948, "decode_tps": 36.799, "finish_reason": "length", "text": "", "arm": "plain"}
+{"prompt": "chat", "regime": "greedy", "rep": 2, "completion_tokens": 240, "n_chunks": 231, "ttft_s": 0.5785, "decode_s": 6.4243, "decode_tps": 37.202, "finish_reason": "length", "text": "", "arm": "plain"}
+{"prompt": "code", "regime": "greedy", "rep": 2, "completion_tokens": 240, "n_chunks": 241, "ttft_s": 0.4499, "decode_s": 6.4268, "decode_tps": 37.188, "finish_reason": "length", "text": "", "arm": "plain"}
+{"prompt": "math", "regime": "greedy", "rep": 2, "completion_tokens": 240, "n_chunks": 215, "ttft_s": 0.7224, "decode_s": 6.4314, "decode_tps": 37.162, "finish_reason": "length", "text": "", "arm": "plain"}
+{"prompt": "ko", "regime": "greedy", "rep": 2, "completion_tokens": 240, "n_chunks": 240, "ttft_s": 0.5197, "decode_s": 6.4121, "decode_tps": 37.273, "finish_reason": "length", "text": "", "arm": "plain"}
+{"prompt": "chat", "regime": "t1", "rep": 2, "completion_tokens": 240, "n_chunks": 241, "ttft_s": 0.5623, "decode_s": 6.5268, "decode_tps": 36.618, "finish_reason": "length", "text": "", "arm": "plain"}
+{"prompt": "code", "regime": "t1", "rep": 2, "completion_tokens": 240, "n_chunks": 240, "ttft_s": 0.5521, "decode_s": 6.517, "decode_tps": 36.673, "finish_reason": "length", "text": "", "arm": "plain"}
+{"prompt": "math", "regime": "t1", "rep": 2, "completion_tokens": 240, "n_chunks": 215, "ttft_s": 0.6999, "decode_s": 6.532, "decode_tps": 36.589, "finish_reason": "length", "text": "", "arm": "plain"}
+{"prompt": "ko", "regime": "t1", "rep": 2, "completion_tokens": 240, "n_chunks": 241, "ttft_s": 0.5423, "decode_s": 6.5095, "decode_tps": 36.715, "finish_reason": "length", "text": "", "arm": "plain"}
