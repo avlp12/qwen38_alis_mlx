@@ -222,3 +222,51 @@ cross-stack speculative comparisons (the "+24%" of the mlx-dspark dossier) do
 not survive it — **protocol differences dominate cross-stack comparisons**, so
 treat any such delta as protocol-confounded unless both stacks run one harness
 ([external-dossiers.md](external-dossiers.md)).
+
+## 7. Capture-and-rerun rollback: the mechanism reversed, the port adopted `[I91]`–`[PA31]`
+
+The mlx-dspark dossier flagged capture-and-rerun rollback as the one design I
+judged superior to my pending-carry and scheduled for porting (`[PA23]`). The
+port landed 2026-08-16: an opt-in `rollback="rerun"` mode in
+`dspark_generate.py`, backed by a `_dspark_capture` hook and a
+`dspark_rerun(cache, n_keep)` method on the GatedDeltaNet layers — on
+rejection, the KV cache is trimmed and the accepted prefix's recurrence is
+re-run from captured scan inputs instead of carrying pending tokens into the
+next verification batch. Pending stays at length 1, so every round drafts a
+fresh block; the flush path structurally disappears.
+
+Verification earned its keep again. The first gate compared rerun's
+reconstructed state against a narrow-width independent forward and failed at
+maxabs 0.25 — a diagnosis pass proved the drift enters at layer 4 via the same
+batch-width SDPA floating-point class the plain-vs-carry comparison already
+commits (`[I80]`), while the boundary layers under single-kernel conditions
+reproduce **exactly, bit for bit**. The gate was wrong-level, not the
+arithmetic; it was rebuilt around functional equivalence against a
+rerun-free control (drift 0.250 vs control 0.328, top-1 identical) and passed
+in full.
+
+Median results (four-prompt, EOS-cut, dependency-chained):
+
+| arm | plain | carry | rerun | rerun vs carry |
+|---|---:|---:|---:|---:|
+| greedy 240 | 37.52 | 47.96 (1.28x) | **51.67 (1.38x)** | +7.7% |
+| t1 240 | 36.95 | 40.24 (1.09x) | **43.32 (1.17x)** | +7.7% |
+| t1 1024 | 36.74 | 39.85 (1.08x) | 40.00 (1.09x) | +0.4% |
+
+The surprise is *where* the gain lives. I ported this expecting it to rescue
+the low-acceptance regimes (Korean under sampling, where carry runs below
+plain). It did the opposite: acceptance rises everywhere (math t1 3.15→4.10),
+but the wins concentrate in **high-acceptance** content, and Korean stays
+lost (t1 240: 0.66x→0.69x; `[CA14]`). The mechanism reading (`[RA18]`):
+pending-carry's real tax is not the re-feed I had priced — it is the
+draft-slot loss that scales with acceptance, because carried pending tokens
+crowd fresh draft positions out of the block exactly when drafts are good.
+Meanwhile rerun's own tax — re-running 48 GDN kernels per rollback — bills the
+low-acceptance regimes that roll back every step. Two taxes, opposite signs of
+correlation with acceptance; rerun wins where acceptance is high, and Korean's
+bottleneck was never rollback overhead at all (`[PA27]`'s gated-MTP
+recommendation for Korean stands).
+
+Defaults are untouched (`rollback="carry"`), the mode is opt-in in the fork
+(`fcd986a`), and the DSpark greedy record moves 48.3 → **51.7 tok/s**. Raw
+records: `results/exp6_rollback/` (validation logs included).
