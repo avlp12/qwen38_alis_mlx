@@ -1,0 +1,26 @@
+diff --git a/mlx/backend/metal/kernels/steel/attn/kernels/steel_attention.metal b/mlx/backend/metal/kernels/steel/attn/kernels/steel_attention.metal
+index 0ff9d91..4a67826 100644
+--- a/mlx/backend/metal/kernels/steel/attn/kernels/steel_attention.metal
++++ b/mlx/backend/metal/kernels/steel/attn/kernels/steel_attention.metal
+@@ -12,6 +12,7 @@
+   attention, dtype, bq, bk, bd, wm, wn, mtype, float)
+ 
+ #define instantiate_attn_shapes_helper(iname, itype, mname, mtype)  \
++    instantiate_attn(iname, itype, 32, 16, 256, 4, 1, mname, mtype) \
+     instantiate_attn(iname, itype, 32, 16, 128, 4, 1, mname, mtype) \
+     instantiate_attn(iname, itype, 32, 32,  80, 4, 1, mname, mtype) \
+     instantiate_attn(iname, itype, 32, 32,  64, 4, 1, mname, mtype)
+diff --git a/mlx/backend/metal/scaled_dot_product_attention.cpp b/mlx/backend/metal/scaled_dot_product_attention.cpp
+index d6f74bc..6630e36 100644
+--- a/mlx/backend/metal/scaled_dot_product_attention.cpp
++++ b/mlx/backend/metal/scaled_dot_product_attention.cpp
+@@ -624,7 +624,8 @@ bool ScaledDotProductAttention::use_fallback(
+         query_head_dim == 256)) ||
+       (query_head_dim == 192 && value_head_dim == 128);
+   const bool sdpa_full_supported_head_dim = query_head_dim == value_head_dim &&
+-      (query_head_dim == 64 || query_head_dim == 80 || query_head_dim == 128);
++      (query_head_dim == 64 || query_head_dim == 80 || query_head_dim == 128 ||
++       (query_head_dim == 256 && key_sequence_length <= 3 * query_sequence_length));
+ 
+   const bool sdpa_full_supported_mask = !has_mask || has_arr_mask ||
+       (query_sequence_length <= key_sequence_length && do_causal);

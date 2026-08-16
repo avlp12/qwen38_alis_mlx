@@ -1,0 +1,669 @@
+diff --git a/mlx_lm/models/qwen3_5.py b/mlx_lm/models/qwen3_5.py
+index af87670..7868f9a 100644
+--- a/mlx_lm/models/qwen3_5.py
++++ b/mlx_lm/models/qwen3_5.py
+@@ -1,5 +1,6 @@
+ # Copyright © 2026 Apple Inc.
+ 
++import os
+ from dataclasses import dataclass, field
+ from typing import Any, Dict, List, Optional, Union
+ 
+@@ -138,6 +139,18 @@ class GatedDeltaNet(nn.Module):
+     ) -> mx.array:
+         B, S, _ = inputs.shape
+ 
++        # The recurrent path takes a (B, S) validity mask, as built by
++        # create_ssm_mask. Callers that drive decoder layers directly -- AWQ
++        # calibration builds one attention mask for the whole model -- can hand
++        # us an attention mask ("causal", or a (S, S) array) instead. That mask
++        # carries nothing the scan can use, so drop it here. Forwarding it is
++        # not merely useless: the fused scan kernel indexes the mask flat, so a
++        # (S, S) array is silently consumed as garbage instead of erroring.
++        if mask is not None and (
++            not isinstance(mask, mx.array) or mask.shape != (B, S)
++        ):
++            mask = None
++
+         if self.sharding_group is not None:
+             inputs = sum_gradients(self.sharding_group)(inputs)
+ 
+@@ -191,7 +204,10 @@ class GatedDeltaNet(nn.Module):
+             self.dt_bias,
+             state,
+             mask,
+-            use_kernel=not self.training,
++            # [I233] 융합 커널은 VJP 미구현 — 민감도 추정/미분이 필요한 경로에서는
++            # MLX_QWEN35_NO_KERNEL=1 로 미분 가능 경로 강제(K3 _DETACH_KDA 교훈).
++            use_kernel=(not self.training
++                        and os.environ.get("MLX_QWEN35_NO_KERNEL") != "1"),
+         )
+ 
+         if cache is not None:
+@@ -269,6 +285,7 @@ class Qwen3_5TextModel(PipelineMixin, nn.Module):
+         inputs: mx.array,
+         cache: Optional[Any] = None,
+         input_embeddings: Optional[mx.array] = None,
++        tap_layers: Optional[List[int]] = None,
+     ) -> mx.array:
+         if input_embeddings is not None:
+             hidden_states = input_embeddings
+@@ -292,9 +309,17 @@ class Qwen3_5TextModel(PipelineMixin, nn.Module):
+         if pipeline_rank < pipeline_size - 1:
+             hidden_states = mx.distributed.recv_like(hidden_states, (pipeline_rank + 1))
+ 
+-        for layer, c in zip(self.pipeline_layers, cache):
++        # A speculative drafter (DSpark/DFlash) is fed intermediate hidden
++        # states, not just the final one. Collecting them costs nothing when
++        # unused, and the alternative — re-running the target — is the whole
++        # cost the drafter exists to avoid.
++        taps = {} if tap_layers is None else {i: None for i in tap_layers}
++
++        for e, (layer, c) in enumerate(zip(self.pipeline_layers, cache)):
+             mask = ssm_mask if layer.is_linear else fa_mask
+             hidden_states = layer(hidden_states, mask=mask, cache=c)
++            if e in taps:
++                taps[e] = hidden_states
+ 
+         # Send to the next process in the pipeline
+         if pipeline_rank != 0:
+@@ -313,7 +338,46 @@ class Qwen3_5TextModel(PipelineMixin, nn.Module):
+                 : hidden_states.shape[0]
+             ]
+ 
+-        return self.norm(hidden_states)
++        hidden_states = self.norm(hidden_states)
++        self._h_prenorm = hidden_states        # [I231] MTP 앵커 = final-norm 이후(vLLM 계약)
++        # 탭은 별도 속성으로 넘긴다 — 반환 시그니처를 바꾸면 이 모델을 부르는
++        # 모든 경로(생성·서버·MTP·투기 루프)가 함께 깨진다.
++        self._taps = taps
++        return hidden_states
++
++
++class Qwen3_5MtpBlock(nn.Module):
++    """MTP 내부 트랜스포머 1층(풀 어텐션 + MLP) — 키 mtp.layers.0.*"""
++
++    def __init__(self, args: TextModelArgs):
++        super().__init__()
++        h = args.hidden_size
++        self.self_attn = Attention(args)
++        self.mlp = MLP(h, args.intermediate_size)
++        self.input_layernorm = nn.RMSNorm(h, eps=args.rms_norm_eps)
++        self.post_attention_layernorm = nn.RMSNorm(h, eps=args.rms_norm_eps)
++
++
++class Qwen3_5Mtp(nn.Module):
++    """벤더 동봉 MTP(nextn) 헤드 — DeepSeek-V3 계열 배선([I231]).
++
++    h' = fc([pre_fc_norm_hidden(h) ; pre_fc_norm_embedding(emb(t+1))])
++       → 트랜스포머 1층(풀 어텐션) → norm → 공유 lm_head
++    체크포인트 키: mtp.fc / mtp.pre_fc_norm_{hidden,embedding} / mtp.layers.0.* / mtp.norm
++    """
++
++    def __init__(self, args: TextModelArgs):
++        super().__init__()
++        h = args.hidden_size
++        self.pre_fc_norm_hidden = nn.RMSNorm(h, eps=args.rms_norm_eps)
++        self.pre_fc_norm_embedding = nn.RMSNorm(h, eps=args.rms_norm_eps)
++        self.fc = nn.Linear(2 * h, h, bias=False)
++        self.layers = [Qwen3_5MtpBlock(args)]      # 체크포인트 키 mtp.layers.0.*
++        self.norm = nn.RMSNorm(h, eps=args.rms_norm_eps)
++
++    @property
++    def shared_head(self):
++        return self.norm
+ 
+ 
+ class TextModel(nn.Module):
+@@ -324,14 +388,50 @@ class TextModel(nn.Module):
+         self.model = Qwen3_5TextModel(args)
+         if not args.tie_word_embeddings:
+             self.lm_head = nn.Linear(args.hidden_size, args.vocab_size, bias=False)
++        self.mtp = Qwen3_5Mtp(args) if getattr(args, "with_mtp", True) else None
++
++    @property
++    def has_mtp(self):
++        return self.mtp is not None and self.mtp.fc.weight.size > 0
++
++    def make_mtp_cache(self):
++        return KVCache()
++
++    def mtp_forward(self, h_prev, tokens, cache=None, return_hidden=False):
++        """드래프트 로짓: 백본 pre-norm hidden + 커밋 토큰(t+1 페어링).
++        체인은 mtp.norm 출력을 pre_normed=True로 직결(재-norm 금지)."""
++        emb = self.model.embed_tokens(tokens)
++        h_ = h_prev.astype(emb.dtype)
++        hn = self.mtp.pre_fc_norm_hidden(h_)   # 체인 스텝에서도 항상 적용
++        x = self.mtp.fc(mx.concatenate(
++            [self.mtp.pre_fc_norm_embedding(emb), hn], axis=-1))
++        mask = None
++        if x.shape[1] > 1:
++            mask = create_attention_mask(x, cache, return_array=True)
++        blk = self.mtp.layers[0]
++        h1 = x + blk.self_attn(blk.input_layernorm(x), mask, cache)
++        h2 = h1 + blk.mlp(blk.post_attention_layernorm(h1))
++        logits = self.lm_head(self.mtp.norm(h2))
++        return (logits, h2) if return_hidden else logits
+ 
+     def __call__(
+         self,
+         inputs: mx.array,
+         cache: Optional[Any] = None,
+         input_embeddings: Optional[mx.array] = None,
++        tap_layers: Optional[List[int]] = None,
++        num_logits: Optional[int] = None,
+     ) -> mx.array:
+-        out = self.model(inputs, cache, input_embeddings=input_embeddings)
++        out = self.model(
++            inputs, cache, input_embeddings=input_embeddings, tap_layers=tap_layers
++        )
++        self._taps = self.model._taps
++        # Prefill chunks are consumed for their cache, not their logits, yet the
++        # output head runs over every position: 79.4 ms for 512 rows against
++        # 4.25 ms for one, on a 248k vocabulary. `num_logits` keeps only the tail
++        # the caller will actually read.
++        if num_logits is not None and num_logits < out.shape[1]:
++            out = out[:, -num_logits:, :]
+         if self.args.tie_word_embeddings:
+             out = self.model.embed_tokens.as_linear(out)
+         else:
+@@ -346,12 +446,14 @@ class TextModel(nn.Module):
+         return [ArraysCache(size=2) if l.is_linear else KVCache() for l in self.layers]
+ 
+     def sanitize(self, weights):
+-        has_mtp_weights = any("mtp." in k for k in weights)
++        # [CA79] mtp 키 존재를 raw-HF 신호로 쓰면 **MTP 보존 빌드에서 영구 참**이 되어
++        # 변환 때 이미 시프트된 norm에 로드 때 또 +1.0이 붙는다(감마 0.944→1.944→2.944).
++        # conv1d 형상만이 raw-HF의 신뢰 가능한 판별자다.
+         has_unsanitized_conv1d = any(
+             "conv1d.weight" in k and v.shape[-1] != 1 for k, v in weights.items()
+         )
+-        should_shift_norm_weights = has_mtp_weights or has_unsanitized_conv1d
+-        weights = {k: v for k, v in weights.items() if "mtp." not in k}
++        should_shift_norm_weights = has_unsanitized_conv1d
++        # [I231] MTP 보존(종전에는 폐기). language_model.mtp.* 로 매핑되어 들어옴.
+ 
+         if self.args.tie_word_embeddings:
+             weights.pop("lm_head.weight", None)
+@@ -362,6 +464,9 @@ class TextModel(nn.Module):
+             "model.norm.weight",
+             ".q_norm.weight",
+             ".k_norm.weight",
++            ".pre_fc_norm_hidden.weight",
++            ".pre_fc_norm_embedding.weight",
++            "mtp.norm.weight",
+         )
+         for k, v in weights.items():
+             if "conv1d.weight" in k and v.shape[-1] != 1:
+@@ -417,22 +522,53 @@ class Model(nn.Module):
+         inputs: mx.array,
+         cache=None,
+         input_embeddings: Optional[mx.array] = None,
++        tap_layers: Optional[List[int]] = None,
++        num_logits: Optional[int] = None,
+     ):
+-        return self.language_model(
+-            inputs, cache=cache, input_embeddings=input_embeddings
++        out = self.language_model(
++            inputs,
++            cache=cache,
++            input_embeddings=input_embeddings,
++            tap_layers=tap_layers,
++            num_logits=num_logits,
+         )
++        self._taps = self.language_model._taps
++        return out
+ 
+     @property
+     def model(self):
+         return self.language_model.model
+ 
++    # ── MTP 자기-투기 계약 위임([I231])
++    @property
++    def has_mtp(self):
++        return self.language_model.has_mtp
++
++    @property
++    def mtp(self):
++        return self.language_model.mtp
++
++    def make_mtp_cache(self):
++        return self.language_model.make_mtp_cache()
++
++    def mtp_forward(self, *a, **kw):
++        return self.language_model.mtp_forward(*a, **kw)
++
++    # Towers this text-only port has no modules for, but whose weights must
++    # survive conversion (see utils.save_passthrough_weights). Dropping them
++    # turns a multimodal checkpoint into a text-only one with no diagnostic;
++    # `mtp.` is listed for stock mlx-lm, and is a no-op here because this port
++    # implements the MTP head and therefore already saves those tensors.
++    passthrough_patterns = ("model.visual.", "vision_tower.", "mtp.")
++
+     def sanitize(self, weights):
+         sanitized = {}
+         for key, value in weights.items():
++            # Vision weights are not consumed by this text-only port; they are
++            # dropped here (nothing to load them into) and preserved at save
++            # time from the source checkpoint instead.
+             if key.startswith("vision_tower") or key.startswith("model.visual"):
+                 continue
+-            if key.startswith("model.visual"):
+-                continue
+             if key.startswith("model.language_model"):
+                 key = key.replace("model.language_model", "language_model.model")
+             elif key.startswith("language_model."):
+diff --git a/mlx_lm/quant/awq.py b/mlx_lm/quant/awq.py
+index 4e9e9ec..44a7e22 100644
+--- a/mlx_lm/quant/awq.py
++++ b/mlx_lm/quant/awq.py
+@@ -140,14 +140,59 @@ deepseek_v2_awq = AWQConfig(
+     ],
+ )
+ 
++
++# GLM-5.2 / DeepSeek-V3.2 use the q-LoRA query path (q_a_proj/q_b_proj), not q_proj.
++glm_moe_dsa_awq = copy.deepcopy(deepseek_v2_awq)
++glm_moe_dsa_awq.no_clip = ["q_a_proj", "q_b_proj", "kv_a_proj_with_mqa", "kv_b_proj", "indexer"]
++glm_moe_dsa_awq.scale_configs[0].layers = ["q_a_proj", "kv_a_proj_with_mqa"]
++# sanitize() decomposes kv_b_proj -> embed_q/unembed_out (MultiLinear), which AWQ
++# cannot scale through the nn.Linear path; drop the deepseek_v2 kv_b_proj config.
++glm_moe_dsa_awq.scale_configs = [
++    c for c in glm_moe_dsa_awq.scale_configs if c.layers != ["self_attn.kv_b_proj"]
++]
++
++
++
++# [I234] Qwen3.8 / Qwen3.5 (qwen3_5) — 하이브리드: 16층 full attention(self_attn) +
++# 48층 GatedDeltaNet(linear_attn). AWQ는 전방-패스 전용이라 융합 스캔 커널을 그대로 쓸 수
++# 있다(경사 기반 DWQ·민감도는 GatedDeltaNet VJP 부재로 사용 불가 — [CA80]).
++# 선형-어텐션 층의 in/out proj는 conv1d·게이팅과 얽혀 있어 스케일 대상에서 제외하고,
++# 공통 MLP와 full-attn 사영만 보정한다(보수적 = 안전).
++qwen3_5_awq = AWQConfig(
++    embed="embed_tokens",
++    lm_head="lm_head",
++    no_clip=["q_proj", "k_proj"],
++    scale_configs=[
++        ScaleConfig(
++            block="self_attn",
++            prev="input_layernorm",
++            layers=["q_proj", "k_proj", "v_proj"],
++            kwargs=["mask"],
++        ),
++        ScaleConfig(prev="mlp.up_proj", layers=["mlp.down_proj"]),
++        ScaleConfig(
++            block="mlp",
++            prev="post_attention_layernorm",
++            layers=["gate_proj", "up_proj"],
++        ),
++    ],
++)
++
+ AWQ_MODEL_CONFIGS = {
+     "llama": llama_awq,
+     "mistral": llama_awq,
+     "qwen2": llama_awq,
+     "qwen3": llama_awq,
++    # [I234] VL 래퍼(Model.language_model) 아래에 있으므로 lm_key 필요 — 없으면
++    #  lm_head가 bf16으로 남아 크기 +2.5GB(품질 이득이 알고리즘 덕인지 흐려진다)
++    "qwen3_5": update(qwen3_5_awq, lm_key="language_model"),
+     "gemma3_text": gemma3_text_awq,
+     "gemma3": update(gemma3_text_awq, lm_key="language_model"),
+     "deepseek_v2": deepseek_v2_awq,
++    # GLM-5.2 / DeepSeek-V3.2 share deepseek_v2's MLA + MoE module layout
++    # (kv_a_proj_with_mqa/kv_b_proj, switch_mlp/shared_experts, dense gate/up/down).
++    "deepseek_v32": glm_moe_dsa_awq,
++    "glm_moe_dsa": glm_moe_dsa_awq,
+ }
+ 
+ 
+@@ -172,11 +217,12 @@ def run_layer(
+     y = []
+     for i in range(0, x.shape[0], batch_size):
+         if indices is not None:
+-            y.append(
+-                layer(x[i : i + batch_size], indices[i : i + batch_size], **kwargs)
+-            )
++            out = layer(x[i : i + batch_size], indices[i : i + batch_size], **kwargs)
+         else:
+-            y.append(layer(x[i : i + batch_size], **kwargs))
++            out = layer(x[i : i + batch_size], **kwargs)
++        # Some decoder layers (e.g. glm_moe_dsa with IndexShare) return
++        # (hidden, topk_indices); keep only the hidden states here.
++        y.append(out[0] if isinstance(out, tuple) else out)
+         mx.eval(y)
+     y = mx.concatenate(y, axis=0)
+     return y
+@@ -208,6 +254,8 @@ def search_best_scale(
+ 
+     block = block or layers[0]
+     out = block(x, **layer_kwargs)
++    if isinstance(out, tuple):  # glm_moe_dsa DecoderLayer returns (hidden, topk)
++        out = out[0]
+ 
+     x_max = x.abs().mean(axis=(0, 1))
+ 
+@@ -283,8 +331,17 @@ def scale_block(
+     for conf in configs:
+         if conf.use_config is not None and not conf.use_config(block):
+             continue
++        try:                                   # prev 모듈이 없는 층도 건너뛴다
++            submodule_from_key(block, conf.prev)
++        except (KeyError, AttributeError):
++            continue
+         if conf.block is not None:
+-            local_block = block[conf.block]
++            # [I234] 하이브리드 아키텍처(예: qwen3_5는 층마다 self_attn 또는 linear_attn)
++            # 에서는 특정 블록이 없는 층이 있다. 그 층에서는 해당 스케일 설정만 건너뛴다.
++            try:
++                local_block = block[conf.block]
++            except KeyError:
++                continue
+             layers = [submodule_from_key(local_block, l) for l in conf.layers]
+         else:
+             local_block = None
+@@ -385,11 +442,17 @@ def clip_block(
+         if isinstance(module, (nn.Linear, SwitchLinear)) and all(
+             k not in path for k in no_clip_keys
+         ):
++            # SwitchLinear stacks n_experts along axis 0, so search_best_clip's
++            # default batch_size=64 over (n_experts*out_features) rows means
++            # ~24k tiny GPU launches per expert weight (launch-overhead bound).
++            # Vectorize with a large batch for stacked experts.
++            bs = 4096 if isinstance(module, SwitchLinear) else 64
+             best_weight = search_best_clip(
+                 module,
+                 quantize_func=quantize_func,
+                 group_size=group_size,
+                 n_grid=n_grid,
++                batch_size=bs,
+             )
+             module.weight = best_weight
+ 
+@@ -415,7 +478,7 @@ def awq_quantize(
+         wq = mx.quantize(w, bits=bits, group_size=group_size)
+         return mx.dequantize(*wq, bits=bits, group_size=group_size)
+ 
+-    mask = create_attention_mask(inputs)
++    mask = create_attention_mask(inputs, return_array=True)
+ 
+     embed_key = awq_config.embed
+     model.model[embed_key] = model.model[embed_key].to_quantized(
+diff --git a/mlx_lm/utils.py b/mlx_lm/utils.py
+index c561214..7e9b627 100644
+--- a/mlx_lm/utils.py
++++ b/mlx_lm/utils.py
+@@ -8,6 +8,7 @@ import json
+ import os
+ import resource
+ import shutil
++import struct
+ from pathlib import Path
+ from textwrap import dedent
+ from typing import (
+@@ -19,6 +20,7 @@ from typing import (
+     Tuple,
+     Type,
+     Union,
++    Sequence,
+ )
+ 
+ import mlx.core as mx
+@@ -53,6 +55,7 @@ MODEL_REMAPPING = {
+     "minimax_m2": "minimax",
+     "iquestcoder": "llama",
+     "gemma4_unified": "gemma4",  # encoder-free multimodal variant; vision/audio weights stripped by sanitize()
++    "Motif": "motif",  # HF ships the capitalized model_type
+ }
+ 
+ MAX_FILE_SIZE_GB = 5
+@@ -216,19 +219,6 @@ def compute_bits_per_weight(model):
+     return model_bytes * 8 / model_params
+ 
+ 
+-DEFAULT_ALLOW_PATTERNS = [
+-    "*.json",
+-    "model*.safetensors",
+-    "*.py",
+-    "tokenizer.model",
+-    "*.tiktoken",
+-    "tiktoken.model",
+-    "*.txt",
+-    "*.jsonl",
+-    "*.jinja",
+-]
+-
+-
+ def _download(
+     path_or_hf_repo: str,
+     revision: Optional[str] = None,
+@@ -248,7 +238,17 @@ def _download(
+     model_path = Path(path_or_hf_repo)
+ 
+     if not model_path.exists():
+-        allow_patterns = allow_patterns or DEFAULT_ALLOW_PATTERNS
++        allow_patterns = allow_patterns or [
++            "*.json",
++            "model*.safetensors",
++            "*.py",
++            "tokenizer.model",
++            "*.tiktoken",
++            "tiktoken.model",
++            "*.txt",
++            "*.jsonl",
++            "*.jinja",
++        ]
+         model_path = Path(
+             snapshot_download(
+                 path_or_hf_repo,
+@@ -261,16 +261,7 @@ def _download(
+ 
+ 
+ def hf_repo_to_path(hf_repo):
+-    # Restrict to the same patterns that `_download` fetches so the snapshot
+-    # completeness check does not fail on files that were never downloaded
+-    # (e.g. `.gitattributes`), which would raise an IncompleteSnapshotError.
+-    return Path(
+-        snapshot_download(
+-            hf_repo,
+-            local_files_only=True,
+-            allow_patterns=DEFAULT_ALLOW_PATTERNS,
+-        )
+-    )
++    return Path(snapshot_download(hf_repo, local_files_only=True))
+ 
+ 
+ def load_config(model_path: Path) -> dict:
+@@ -404,10 +395,7 @@ def load_model(
+             config["quantization_config"] = quantization
+             _quantize(quantization)
+         elif quant_method == "compressed-tensors":
+-            if quantization_config.get("format") == "nvfp4-pack-quantized":
+-                quantization = {"group_size": 16, "bits": 4, "mode": "nvfp4"}
+-            else:
+-                quantization = {"group_size": 32, "bits": 4, "mode": "affine"}
++            quantization = {"group_size": 32, "bits": 4, "mode": "affine"}
+             config["quantization"] = quantization
+             config["quantization_config"] = quantization
+             _quantize(quantization)
+@@ -530,6 +518,19 @@ def load(
+     if adapter_path is not None:
+         model = load_adapters(model, adapter_path)
+         model.eval()
++
++    # Route quantized layers through the small-M kernel. It is a no-op outside
++    # the window it wins in (M in [6, 8], N >= 4096, 4-bit, group 64), so plain
++    # decode at M=1 is untouched; what it changes is multi-token verification,
++    # where MLX's own path costs ~5x its M=1 time (ml-explore/mlx#4265).
++    # Wiring it here rather than at the call sites is deliberate: the kernel sat
++    # unused for a whole campaign because every production path — generate,
++    # server, the speculative loops — comes through load() and none of them knew
++    # to ask for it. Opt out with MLXLM_NO_FAST_QMM=1.
++    from . import fast_qmm
++
++    fast_qmm.enable()
++
+     tokenizer = load_tokenizer(
+         model_path, tokenizer_config, eos_token_ids=config.get("eos_token_id", None)
+     )
+@@ -942,6 +943,7 @@ def dequantize_model(model: nn.Module) -> nn.Module:
+ def save_config(
+     config: dict,
+     config_path: Union[str, Path],
++    keep_vision_config: bool = False,
+ ) -> None:
+     """Save the model configuration to the ``config_path``.
+ 
+@@ -953,7 +955,13 @@ def save_config(
+     """
+     # Clean unused keys
+     config.pop("_name_or_path", None)
+-    config.pop("vision_config", None)
++    # `vision_config` is kept only when the vision weights actually survived
++    # conversion. Keeping it on a stripped checkpoint would advertise a tower
++    # that is not in the file; dropping it when the tower *is* preserved would
++    # hide it. Either mismatch makes the artifact misdescribe itself, and a
++    # 27B VL model already shipped as silently text-only once because of it.
++    if not keep_vision_config:
++        config.pop("vision_config", None)
+     if "quantization" in config:
+         config["quantization_config"] = config["quantization"]
+ 
+@@ -965,6 +973,110 @@ def save_config(
+         json.dump(config, fid, indent=4)
+ 
+ 
++def save_passthrough_weights(
++    dst_path: Path,
++    src_path: Path,
++    patterns: Sequence[str],
++) -> List[str]:
++    """Carry source tensors the model does not consume into the converted repo.
++
++    A model's ``sanitize`` drops every key its MLX implementation has no module
++    for. That is correct for junk (``rotary_emb.inv_freq``) and wrong for whole
++    towers: a vision tower or an MTP head silently disappears, turning a
++    multimodal or speculative-decoding checkpoint into a plain text model with
++    no diagnostic. Ports are incremental — a tower being unimplemented today is
++    not a reason to destroy its weights on the way through.
++
++    Declaring ``passthrough_patterns`` on a model opts its unconsumed towers
++    into a verbatim byte copy: no dtype cast, no quantization, no re-encoding.
++    Keys the model *did* save are skipped, so this never duplicates a tower that
++    has a real implementation (matching is suffix-aware because sanitize may
++    re-parent a key, e.g. ``mtp.x`` -> ``language_model.mtp.x``).
++
++    Returns the list of keys carried over.
++    """
++    index_path = dst_path / "model.safetensors.index.json"
++    if not index_path.exists():  # single-shard save; nothing to append to
++        return []
++    src_index_path = src_path / "model.safetensors.index.json"
++    if not src_index_path.exists():
++        return []
++
++    with open(src_index_path) as fid:
++        src_map = json.load(fid)["weight_map"]
++    with open(index_path) as fid:
++        dst_index = json.load(fid)
++
++    saved = set(dst_index["weight_map"])
++    def already_saved(key):
++        return key in saved or any(s.endswith("." + key) for s in saved)
++
++    wanted = sorted(
++        k for k in src_map
++        if any(k.startswith(p) for p in patterns) and not already_saved(k)
++    )
++    if not wanted:
++        return []
++
++    def read_header(path):
++        with open(path, "rb") as fid:
++            n = struct.unpack("<Q", fid.read(8))[0]
++            return json.loads(fid.read(n)), 8 + n
++
++    by_shard: Dict[str, List[str]] = {}
++    for k in wanted:
++        by_shard.setdefault(src_map[k], []).append(k)
++
++    blobs, meta = {}, {}
++    for shard, keys in by_shard.items():
++        header, data_start = read_header(src_path / shard)
++        with open(src_path / shard, "rb") as fid:
++            for k in keys:
++                start, end = header[k]["data_offsets"]
++                fid.seek(data_start + start)
++                blobs[k] = fid.read(end - start)
++                meta[k] = {"dtype": header[k]["dtype"], "shape": header[k]["shape"]}
++
++    shard_name = "model-passthrough-00001-of-00001.safetensors"
++    out_header, offset = {}, 0
++    for k in wanted:
++        size = len(blobs[k])
++        out_header[k] = {**meta[k], "data_offsets": [offset, offset + size]}
++        offset += size
++    header_bytes = json.dumps(out_header, separators=(",", ":")).encode()
++    header_bytes += b" " * ((-(8 + len(header_bytes))) % 8)  # 8-byte align data
++    tmp = dst_path / f".{shard_name}.tmp"
++    with open(tmp, "wb") as fid:
++        fid.write(struct.pack("<Q", len(header_bytes)))
++        fid.write(header_bytes)
++        for k in wanted:
++            fid.write(blobs[k])
++    os.replace(tmp, dst_path / shard_name)
++
++    # Verify the bytes landed intact before advertising them in the index — a
++    # half-written passthrough shard that the index points at is worse than none.
++    written, data_start = read_header(dst_path / shard_name)
++    with open(dst_path / shard_name, "rb") as fid:
++        for k in wanted:
++            start, end = written[k]["data_offsets"]
++            fid.seek(data_start + start)
++            if fid.read(end - start) != blobs[k]:
++                os.remove(dst_path / shard_name)
++                raise RuntimeError(f"passthrough verification failed for {k}")
++
++    total = sum(len(v) for v in blobs.values())
++    for k in wanted:
++        dst_index["weight_map"][k] = shard_name
++    dst_index.setdefault("metadata", {})
++    dst_index["metadata"]["total_size"] = (
++        dst_index["metadata"].get("total_size", 0) + total
++    )
++    with open(index_path, "w") as fid:
++        json.dump(dst_index, fid, indent=1)
++    print(f"[INFO] Preserved {len(wanted)} unconsumed tensors ({total / 1e9:.2f} GB)")
++    return wanted
++
++
+ def save(
+     dst_path: Union[str, Path],
+     src_path_or_repo: Union[str, Path],
+@@ -983,10 +1095,24 @@ def save(
+ 
+     dst_path = Path(dst_path)
+     save_model(dst_path, model, donate_model=True)
+-    save_config(config, config_path=dst_path / "config.json")
++
++    copy_patterns = ["*.py", "generation_config.json"]
++    kept_vision = False
++    patterns = getattr(model, "passthrough_patterns", ())
++    if patterns:
++        preserved = save_passthrough_weights(dst_path, src_path, patterns)
++        kept_vision = any(".visual." in k or "vision" in k for k in preserved)
++        if preserved:
++            # A preserved tower is unusable without the processor configs that
++            # describe its inputs, so they travel with it.
++            copy_patterns += ["preprocessor_config.json", "*preprocessor_config.json"]
++
++    save_config(
++        config, config_path=dst_path / "config.json", keep_vision_config=kept_vision
++    )
+     tokenizer.save_pretrained(dst_path)
+ 
+-    for p in ["*.py", "generation_config.json"]:
++    for p in copy_patterns:
+         for file in glob.glob(str(src_path / p)):
+             shutil.copy(file, dst_path)
+ 
