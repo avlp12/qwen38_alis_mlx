@@ -33,6 +33,7 @@ All measured, all reproducible from [results/](results/) and
 | served TTFT, 8.3K-token streaming request | 20.3 s | **11.9 s** (1.705x) | `results/bench_2box/serving_verdict.json` |
 | quality, 8-bit vs bf16 (corpus PPL, paired, ≈103K tokens) | — | statistically indistinguishable on en / ko / code | `results/ppl_verdict.json` |
 | quality, 4-bit AWQ vs uniform 4-bit | — | better on all three slices; recovers 48.7% / 26.9% / 14.7% of the gap to 8-bit (en / ko / code) | same |
+| quality, exact full-vocab KL to bf16 — 10-build tier sweep incl. mlx-community fp4 | — | AWQ 4-bit KL 0.0654 vs uniform 0.0763 vs nvfp4 0.0962 vs mxfp4 0.1437; chart + table in [docs/kl-tiers.md](docs/kl-tiers.md) | `results/kl_out/` |
 
 > **Correction (2026-08-16, retroactive).** The speculative rows previously read
 > MTP k=2 **50.4** / DSpark **62.2** (71.9 on English prompts). Those figures
@@ -91,6 +92,8 @@ docs/
                            (kernel, then EOS protocol), and the operating point that survived
   two-box.md               TB5 layer-pipelined prefill: bubble law, bitwise proof,
                            427 -> 733 tok/s, server integration
+  kl-tiers.md              the tier chart: exact KL vs size for 10 builds (ours + community),
+                           the byte-identity cross-check, and per-Mac tier guidance
   methodology.md           every measurement rule, each with the incident that bought it
   external-dossiers.md     mlx-dspark, AtomicChat, vLLM/B70, llama.cpp, MTPLX — what
                            the ecosystem measured and what I took from it
