@@ -65,6 +65,9 @@ mechanism here exists to guarantee — see
 - [ml-explore/mlx #4253](https://github.com/ml-explore/mlx/issues/4253) — `gather_mm` silent wrong results with `sorted_indices=True` on a non-contiguous lhs (closed)
 - [ml-explore/mlx #4246](https://github.com/ml-explore/mlx/issues/4246) — `gather_qmm` throughput gap for MoE-typical small groups
 
+
+> Kernel work now has a canonical home: [avlp12/mlx](https://github.com/avlp12/mlx) (branch `alis` = v0.32.0 + the SDPA head_dim-256 fused path, with the kernel roadmap in `docs/ALIS_KERNELS.md`). The patch in `code/patches/` is the same change; the fork is where it evolves.
+
 ## Repository map
 
 ```
