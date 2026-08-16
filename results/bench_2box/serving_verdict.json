@@ -1,0 +1,68 @@
+{
+  "campaign": "mlx_lm.server --prefill-2box opt-in integration (v1)",
+  "date": "2026-08-16",
+  "model": "/Users/gesicht/qwen38/q4v (qwen3_5, 64 layers, split 32)",
+  "runner": "epsilon 10.0.0.2:39919, /Users/m3ms/qwen38/q4v, venv_mlxjit (mlx 0.32.0.dev20260816+7a1d4f5, matched)",
+  "verifications": {
+    "1_no_regression_flag_off": {
+      "method": "pristine server.py (git stash) vs edited, flag off; greedy 64-tok, logprobs ids; batch path + seeded single path; 3 prompts (14/162/8330 tok)",
+      "result": "PASS - token sequences and usage identical on all 6 captures"
+    },
+    "2_correctness_flag_on_vs_off": {
+      "method": "same 3 prompts, greedy; flag-on vs flag-off(batch) and flag-off(single/seeded); plus min-tokens=64 run forcing all 3 prompts through 2box",
+      "result": "PASS - all token sequences identical (6/6 comparisons)",
+      "schedule_note": "exact equality across *different* chunk schedules is not guaranteed in general (verify_2box: 0.25 maxabs logit delta chunked-vs-singleshot); a 4th prompt variant (enable_thinking=false) flipped one greedy token at position 26 vs the 2048-batch path. Schedule-matched control (--prefill-step-size 1024 both sides, seeded single path) on that exact prompt: EXACT equality 28/28. 2box@1024 == single-box@1024 through the real HTTP path."
+    },
+    "3_ttft_8k_streaming": {
+      "method": "8330-tok prompt, stream, time to first SSE data line; fresh server per rep, warm request (distinct 4.5K doc), 40s cooldowns, alternating on/off, 3 reps each, curl-equivalent stdlib client",
+      "on_s": [11.924, 11.872, 11.906],
+      "off_s": [20.298, 20.299, 20.28],
+      "median_speedup": 1.705,
+      "spread_pct": {"on": 0.44, "off": 0.09},
+      "note": "rep-index label in tags collided (zsh global loop var); measurements are distinct boots in on/off alternation per driver log timestamps"
+    },
+    "4_multiturn_incremental": {
+      "method": "3-turn conversation (8.3K doc -> short follow-up -> 6.1K follow-up), enable_thinking=false, flag-on server, evidence = server+runner logs, cached_tokens, wall",
+      "turn1": "prompt 8341, cached 0, 2box full (runner e0=0), wall 12.4s",
+      "turn2": "prompt 8396, cached 8369 -> 27-token local incremental (below 4096 gate, no 2box), wall 1.27s",
+      "turn3": "prompt 14582, cached 8426 -> 2box incremental: runner resumed at e0=8340 (resident session), computed 6241 not 14581, sent only 6155 (send_from=8426), wall 10.7s vs 16.8s flag-off same turn (1.58x)",
+      "result": "PASS - subsequent turns prefill only the increment on both boxes"
+    },
+    "5_runner_down": {
+      "startup": "PASS - server refuses to start: 'prefill-2box runner unreachable at HOST:PORT (...). Start it on the remote box: ...' (probe before model load). Policy = fail-fast, no silent single-box fallback.",
+      "mid_session": "PASS - request fails (server log: WireError peer closed -> TwoBoxError; HTTP client sees dropped connection, not JSON 500 - known constraint), server survives, LRU/state intact",
+      "revival": "PASS - runner restarted; next request auto-reconnects (fresh TwoBoxPrefill + warmup) and succeeds (747 tok/s prefill)"
+    }
+  },
+  "bugs_found_and_fixed_during_integration": [
+    "runner _do_prefill2: lazy mx.contiguous slice handed to sender thread -> hard abort 'There is no Stream(gpu, 1) in current thread' (thread-local stream from mlx_lm.generate import chain; triggered only when send_from>0, i.e. first incremental turn). Fix: evaluate piece before enqueue (matches verified _do_prefill discipline).",
+    "runner _do_prefill2: sender thread leaked (blocked on queue) if compute raised mid-prefill. Fix: try/finally sendq.put(None).",
+    "server: request-supplied adapter with --prefill-2box would silently mix adapter weights (local half) with base weights (remote half). Fix: clear ValueError."
+  ],
+  "files_changed": {
+    "modified": [
+      "/Users/gesicht/glm5.2/mlx-lm/mlx_lm/server.py",
+      "/Users/gesicht/glm5.2/mlx-lm/mlx_lm/prefill_2box/server.py"
+    ],
+    "new": [
+      "/Users/gesicht/glm5.2/mlx-lm/mlx_lm/prefill_2box/serving.py"
+    ],
+    "epsilon_mirror": "all three synced to /Users/m3ms/mlx-lm-fork (sha256 verified)"
+  },
+  "usage": {
+    "epsilon": "cd /Users/m3ms/mlx-lm-fork && nohup /Users/m3ms/venv_mlxjit/bin/python -m mlx_lm.prefill_2box.server --model /Users/m3ms/qwen38/q4v --host 0.0.0.0 --port 39919 --sessions 4 >> /Users/m3ms/qwen38/prefill2box_runner.log 2>&1 &  (or /Users/m3ms/qwen38/launch_runner.sh)",
+    "gesicht": "cd /Users/gesicht/glm5.2/mlx-lm && ~/venv_mlxjit/bin/python -m mlx_lm server --model /Users/gesicht/qwen38/q4v --port 8003 --prefill-2box 10.0.0.2:39919 --prefill-step-size 1024",
+    "recommend_prefill_step_1024": "makes local (short/incremental) prefills share the 1024 schedule with 2box -> responses bitwise-match a single-box 1024 server; costs ~1% single-box prefill speed"
+  },
+  "remaining_constraints": [
+    "v1 plain decode only: --mtp / --draft-model / adapters / distributed / model switching all rejected with explicit errors (no silent fallback)",
+    "--prefill-2box disables batching: requests serve sequentially through _serve_single",
+    "greedy outputs across DIFFERENT chunk schedules can flip near-ties (pre-existing chunked-prefill numerics, not 2box); use --prefill-step-size 1024 for schedule-matched reproducibility",
+    "thinking-mode multi-turn: qwen3.5 template reformats <think> blocks in history, breaking token-prefix continuity -> prompt cache misses for ALL server paths (pre-existing); enable_thinking=false conversations reuse cleanly",
+    "runner serves one orchestrator connection at a time (listen(1)); one flag-on server per runner",
+    "mid-session runner death surfaces as dropped HTTP connection + clear server-side log, not a JSON 500 (handler propagates through http.server)",
+    "per-prefill fixed cost ~0.07-0.15s + 79MB state fetch floor (24 GDN states) -> min-tokens gate (default 4096) keeps short prompts local",
+    "epsilon session store: 4 sessions LRU, ~0.35GB per 8K session; sessions survive reconnects, die with the runner process"
+  ],
+  "measurement_artifacts": "results/*.jsonl, results/*.json, logs/*.log in this directory; runner log /Users/m3ms/qwen38/prefill2box_runner.log"
+}

@@ -1,0 +1,56 @@
+{
+ "n_total": 2049,
+ "chunk": 1024,
+ "split": 32,
+ "cache_equal": "128/128",
+ "cache_worst_mismatch": [
+  "",
+  0.0
+ ],
+ "logits_maxabs_2box_vs_chunked": 0.0,
+ "logits_bitwise_2box_vs_chunked": true,
+ "logits_maxabs_chunked_vs_singleshot": 0.25,
+ "greedy_match": true,
+ "greedy_first_mismatch": null,
+ "seq_ref_head": [
+  220,
+  95793,
+  14,
+  96348,
+  220,
+  17,
+  15,
+  16
+ ],
+ "seq_2box_head": [
+  220,
+  95793,
+  14,
+  96348,
+  220,
+  17,
+  15,
+  16
+ ],
+ "t_ref_prefill": 4.634757083011209,
+ "t_2box_pipeline": 3.717132625009981,
+ "stats": {
+  "n_tokens": 2048,
+  "schedule": [
+   1024,
+   1024
+  ],
+  "stream_kv": false,
+  "t_pipeline": 3.717132625009981,
+  "t_cache_install": 0.06672616700234357,
+  "server_t_chunks": [
+   1.3212782499904279,
+   1.1789480000006733
+  ],
+  "server_t_compute": 2.5034210000012536,
+  "cache_wire_bytes": 144080896,
+  "cache_wire_s": 0.05530887500208337
+ },
+ "strict_pass": true,
+ "pass": true
+}

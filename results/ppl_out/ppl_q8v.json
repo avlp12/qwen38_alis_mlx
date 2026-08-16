@@ -1,0 +1,46 @@
+{
+  "tag": "q8v",
+  "build": "q8v",
+  "size_gb": 27.9,
+  "bits": 8,
+  "bits_top_level": 8,
+  "n_paths_quantized": 0,
+  "n_paths_skipped": 0,
+  "group_size": 64,
+  "ctx": 2048,
+  "stride": 512,
+  "load_s": 3.5,
+  "slices": {
+    "en": {
+      "n_tokens": 35981,
+      "tok_sha": "25bc1e3915ba2e0e",
+      "nll": 1.75371,
+      "nll_se": 0.01231,
+      "ppl": 5.776,
+      "ppl_lo": 5.7054,
+      "ppl_hi": 5.8475,
+      "eval_s": 343.2
+    },
+    "ko": {
+      "n_tokens": 35179,
+      "tok_sha": "7d902d99e7070aad",
+      "nll": 1.80807,
+      "nll_se": 0.01233,
+      "ppl": 6.0987,
+      "ppl_lo": 6.0239,
+      "ppl_hi": 6.1744,
+      "eval_s": 360.3
+    },
+    "code": {
+      "n_tokens": 32295,
+      "tok_sha": "41a4d60303e25567",
+      "nll": 0.51967,
+      "nll_se": 0.00837,
+      "ppl": 1.6815,
+      "ppl_lo": 1.6675,
+      "ppl_hi": 1.6956,
+      "eval_s": 332.6
+    }
+  },
+  "peak_mem_gb": 31.3
+}

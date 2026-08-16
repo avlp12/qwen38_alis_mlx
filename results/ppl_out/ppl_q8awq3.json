@@ -1,0 +1,46 @@
+{
+  "tag": "q8awq3",
+  "build": "q8awq3",
+  "size_gb": 28.27,
+  "bits": 8,
+  "bits_top_level": 4,
+  "n_paths_quantized": 498,
+  "n_paths_skipped": 289,
+  "group_size": 64,
+  "ctx": 2048,
+  "stride": 512,
+  "load_s": 1.5,
+  "slices": {
+    "en": {
+      "n_tokens": 35981,
+      "tok_sha": "25bc1e3915ba2e0e",
+      "nll": 1.75317,
+      "nll_se": 0.0123,
+      "ppl": 5.7729,
+      "ppl_lo": 5.7023,
+      "ppl_hi": 5.8443,
+      "eval_s": 368.5
+    },
+    "ko": {
+      "n_tokens": 35179,
+      "tok_sha": "7d902d99e7070aad",
+      "nll": 1.80745,
+      "nll_se": 0.01233,
+      "ppl": 6.0949,
+      "ppl_lo": 6.0202,
+      "ppl_hi": 6.1705,
+      "eval_s": 362.6
+    },
+    "code": {
+      "n_tokens": 32295,
+      "tok_sha": "41a4d60303e25567",
+      "nll": 0.51934,
+      "nll_se": 0.00837,
+      "ppl": 1.6809,
+      "ppl_lo": 1.6669,
+      "ppl_hi": 1.695,
+      "eval_s": 334.9
+    }
+  },
+  "peak_mem_gb": 31.7
+}

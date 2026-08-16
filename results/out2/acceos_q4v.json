@@ -1,0 +1,47 @@
+{
+  "build": "q4v",
+  "eos": [
+    248044,
+    248046
+  ],
+  "chat": {
+    "n_tok_total": 512,
+    "n_tok_to_eos": 382,
+    "dspark_accept_all": 2.639,
+    "dspark_accept_pre_eos": 2.325,
+    "steps_all": 194,
+    "steps_pre_eos": 163,
+    "mtp_k2_accept_pre_eos": 2.433,
+    "mtp_k2_tok": 382
+  },
+  "code": {
+    "n_tok_total": 512,
+    "n_tok_to_eos": 224,
+    "dspark_accept_all": 2.427,
+    "dspark_accept_pre_eos": 3.733,
+    "steps_all": 211,
+    "steps_pre_eos": 60,
+    "mtp_k2_accept_pre_eos": 2.635,
+    "mtp_k2_tok": 224
+  },
+  "math": {
+    "n_tok_total": 512,
+    "n_tok_to_eos": 165,
+    "dspark_accept_all": 3.879,
+    "dspark_accept_pre_eos": 4.706,
+    "steps_all": 132,
+    "steps_pre_eos": 34,
+    "mtp_k2_accept_pre_eos": 2.797,
+    "mtp_k2_tok": 165
+  },
+  "ko": {
+    "n_tok_total": 512,
+    "n_tok_to_eos": null,
+    "dspark_accept_all": 1.822,
+    "dspark_accept_pre_eos": 1.822,
+    "steps_all": 281,
+    "steps_pre_eos": 281,
+    "mtp_k2_accept_pre_eos": 1.932,
+    "mtp_k2_tok": 512
+  }
+}

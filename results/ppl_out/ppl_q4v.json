@@ -1,0 +1,46 @@
+{
+  "tag": "q4v",
+  "build": "q4v",
+  "size_gb": 15.17,
+  "bits": 4,
+  "bits_top_level": 4,
+  "n_paths_quantized": 0,
+  "n_paths_skipped": 0,
+  "group_size": 64,
+  "ctx": 2048,
+  "stride": 512,
+  "load_s": 1.2,
+  "slices": {
+    "en": {
+      "n_tokens": 35981,
+      "tok_sha": "25bc1e3915ba2e0e",
+      "nll": 1.77686,
+      "nll_se": 0.01235,
+      "ppl": 5.9112,
+      "ppl_lo": 5.8387,
+      "ppl_hi": 5.9847,
+      "eval_s": 359.2
+    },
+    "ko": {
+      "n_tokens": 35179,
+      "tok_sha": "7d902d99e7070aad",
+      "nll": 1.84399,
+      "nll_se": 0.01245,
+      "ppl": 6.3217,
+      "ppl_lo": 6.2435,
+      "ppl_hi": 6.4009,
+      "eval_s": 349.2
+    },
+    "code": {
+      "n_tokens": 32295,
+      "tok_sha": "41a4d60303e25567",
+      "nll": 0.60639,
+      "nll_se": 0.0087,
+      "ppl": 1.8338,
+      "ppl_lo": 1.8179,
+      "ppl_hi": 1.8498,
+      "eval_s": 321.8
+    }
+  },
+  "peak_mem_gb": 18.6
+}

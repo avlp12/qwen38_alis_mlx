@@ -1,0 +1,46 @@
+{
+  "tag": "bf16",
+  "build": "src",
+  "size_gb": 51.75,
+  "bits": null,
+  "bits_top_level": null,
+  "n_paths_quantized": 0,
+  "n_paths_skipped": 0,
+  "group_size": null,
+  "ctx": 2048,
+  "stride": 512,
+  "load_s": 2.7,
+  "slices": {
+    "en": {
+      "n_tokens": 35981,
+      "tok_sha": "25bc1e3915ba2e0e",
+      "nll": 1.75326,
+      "nll_se": 0.01231,
+      "ppl": 5.7734,
+      "ppl_lo": 5.7028,
+      "ppl_hi": 5.8449,
+      "eval_s": 352.9
+    },
+    "ko": {
+      "n_tokens": 35179,
+      "tok_sha": "7d902d99e7070aad",
+      "nll": 1.80754,
+      "nll_se": 0.01234,
+      "ppl": 6.0954,
+      "ppl_lo": 6.0207,
+      "ppl_hi": 6.1711,
+      "eval_s": 343.0
+    },
+    "code": {
+      "n_tokens": 32295,
+      "tok_sha": "41a4d60303e25567",
+      "nll": 0.51959,
+      "nll_se": 0.00837,
+      "ppl": 1.6813,
+      "ppl_lo": 1.6673,
+      "ppl_hi": 1.6955,
+      "eval_s": 316.6
+    }
+  },
+  "peak_mem_gb": 55.2
+}

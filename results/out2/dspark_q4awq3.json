@@ -1,0 +1,94 @@
+{
+  "build": "q4awq3",
+  "lossless": {
+    "chat": false,
+    "code": true,
+    "math": true,
+    "ko": true
+  },
+  "prefill_tok_s": {
+    "mean": 432.1,
+    "runs": [
+      431.8,
+      432.0,
+      432.2,
+      432.2
+    ]
+  },
+  "plain": {
+    "chat": {
+      "tok_s": 37.25,
+      "tok_s_runs": [
+        37.22,
+        37.24,
+        37.29
+      ]
+    },
+    "code": {
+      "tok_s": 37.31,
+      "tok_s_runs": [
+        37.12,
+        37.25,
+        37.54
+      ]
+    },
+    "math": {
+      "tok_s": 37.35,
+      "tok_s_runs": [
+        37.11,
+        37.46,
+        37.47
+      ]
+    },
+    "ko": {
+      "tok_s": 37.22,
+      "tok_s_runs": [
+        36.87,
+        37.28,
+        37.5
+      ]
+    },
+    "mean": 37.28
+  },
+  "dspark": {
+    "chat": {
+      "tok_s": 48.34,
+      "tok_s_runs": [
+        48.31,
+        48.35,
+        48.36
+      ],
+      "accept_len": 2.4
+    },
+    "code": {
+      "tok_s": 70.07,
+      "tok_s_runs": [
+        70.06,
+        70.06,
+        70.09
+      ],
+      "accept_len": 3.429
+    },
+    "math": {
+      "tok_s": 50.62,
+      "tok_s_runs": [
+        50.42,
+        50.71,
+        50.73
+      ],
+      "accept_len": 2.49
+    },
+    "ko": {
+      "tok_s": 32.71,
+      "tok_s_runs": [
+        32.66,
+        32.73,
+        32.73
+      ],
+      "accept_len": 1.626
+    },
+    "mean": 50.44,
+    "accept_mean": 2.486
+  },
+  "peak_gb": 16.89
+}

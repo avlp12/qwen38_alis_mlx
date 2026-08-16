@@ -1,0 +1,46 @@
+{
+  "tag": "q6v",
+  "build": "q6v",
+  "size_gb": 21.53,
+  "bits": 6,
+  "bits_top_level": 6,
+  "n_paths_quantized": 0,
+  "n_paths_skipped": 0,
+  "group_size": 64,
+  "ctx": 2048,
+  "stride": 512,
+  "load_s": 1.3,
+  "slices": {
+    "en": {
+      "n_tokens": 35981,
+      "tok_sha": "25bc1e3915ba2e0e",
+      "nll": 1.75654,
+      "nll_se": 0.01232,
+      "ppl": 5.7924,
+      "ppl_lo": 5.7214,
+      "ppl_hi": 5.8642,
+      "eval_s": 376.0
+    },
+    "ko": {
+      "n_tokens": 35179,
+      "tok_sha": "7d902d99e7070aad",
+      "nll": 1.80858,
+      "nll_se": 0.01234,
+      "ppl": 6.1018,
+      "ppl_lo": 6.0269,
+      "ppl_hi": 6.1775,
+      "eval_s": 362.6
+    },
+    "code": {
+      "n_tokens": 32295,
+      "tok_sha": "41a4d60303e25567",
+      "nll": 0.52197,
+      "nll_se": 0.00837,
+      "ppl": 1.6854,
+      "ppl_lo": 1.6713,
+      "ppl_hi": 1.6995,
+      "eval_s": 334.4
+    }
+  },
+  "peak_mem_gb": 25.0
+}
