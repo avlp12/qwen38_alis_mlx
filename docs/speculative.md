@@ -270,3 +270,47 @@ recommendation for Korean stands).
 Defaults are untouched (`rollback="carry"`), the mode is opt-in in the fork
 (`fcd986a`), and the DSpark greedy record moves 48.3 → **51.7 tok/s**. Raw
 records: `results/exp6_rollback/` (validation logs included).
+
+## 8. The server catches up with the lab `[I96]`–`[PA38]`
+
+Three follow-ups landed 2026-08-16 evening, closing the gap between in-process
+records and what an actual `mlx_lm.server` deployment delivers.
+
+**Server-native gated MTP.** The truncation-aware rejection sampler of §6 was
+unreachable from the server: no CLI knob carried `min_draft_p`, and the
+auto-enable predicate actively *disabled* rejection acceptance whenever the
+request used top-p or top-k — i.e. under Qwen's own recommended sampling, the
+exact case the sampler was built for. The wiring fix (explicit
+`--mtp-min-draft-p` / `--mtp-spec-draft-temp`, spec kwargs threaded through
+`stream_generate` by name, predicate rewritten, penalty-bearing requests
+falling back to plain decode instead of erroring) is commit `b8a8e7c`.
+Measured over HTTP streaming (four prompts × three alternated server boots,
+EOS natural stop): greedy **plain 37.28 → gated MTP 53.06 tok/s (1.42x)**,
+t1/top-p .95/top-k 20 **47.11 (1.28x)** — and the greedy figure matches the
+in-process record (52.8), so the serving stack itself (SSE, detokenizer,
+HTTP) taxes speculation by approximately nothing. Greedy responses are
+character-identical to plain. One deliberate exclusion: MTP mode still pays a
+full prefill per request (no prompt-cache reuse) — the uncommitted-tail
+poisoning hazard is real, and the cost lands on multi-turn TTFT, not decode
+(`[I98]`).
+
+**The small A/Bs all held the line.** Fair 7-vs-7 comparison (a `read_last`
+port making block-7 draft counts equal) dissolved the old "block 8 beats
+block 7" claim into a 7v6 artifact; gate k=6 is noise; gate k=8 *loses* 8.3% —
+because verify width k+1 = 9 exits the split-K kernel's M∈[6,8] window, a
+bookkeeping error in the earlier "flat through width 8" reading (drafting
+width, not verify width). Defaults stay exactly where §6 left them
+(`[PA37]`).
+
+**MTP-head realignment to the 4-bit hidden states** (`[PA25]`①,
+on-policy self-distillation of the vendor head against the quantized model's
+own hidden states) cleared its gate locally: at the production operating
+point (k=4 + gate 0.6, greedy) the realigned head runs **+6.1%**
+(57.25 → 60.75 tok/s in that harness's frame), drift control ±0.2%, 3/4
+prompts individually significant. It ships nowhere yet: Korean reads −1.7%
+and the t1 regime is unmeasured, so the published 4-bit build keeps the
+vendor head until both survive a re-adjudication (`[PA38]`). Two harness
+incidents en route are preserved in the ledger — an oracle comparing two
+different weight sources (`[I103]`: *an oracle's two arms must share
+weights before it can measure wiring*) and a suffix-match miss that fed a
+bf16 tensor to `quantized_matmul`.
