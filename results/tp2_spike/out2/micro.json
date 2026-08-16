@@ -1,0 +1,12 @@
+{
+  "lm_head_M1_ms": 1.11,
+  "lm_head_M5_ms": 1.533,
+  "mtp_forward_M1_ms": 1.623,
+  "mtp_block_M1_ms": 0.523,
+  "chain_step_sync_ms": 2.202,
+  "derived": {
+    "lm_head_share_of_forward": 0.684,
+    "sync_overhead_ms": 0.579,
+    "note": "샤딩 절감 상한 ≈ (lm_head_M1 + (mtp_block_M1 − fc/embed/norm 잔류)) / 2 − comm(all_sum×2 + 로짓 결합). sync_overhead 는 샤딩 불변."
+  }
+}

@@ -159,3 +159,17 @@ box, the fourth diverging at token 41 within the established fp-drift class.
 Ledger `[I109]`-`[PA42]`; raw JSONs in `results/tp2_spike/`. Not integrated
 into serving yet — that call, and the stage-2 lever (sharding the MTP block
 and lm_head, paper arithmetic ~87 tok/s), are open.
+
+**Stage-2 lever (sharding the MTP block + lm_head): tried, rejected
+(2026-08-17).** The paper arithmetic said ~87 tok/s; a decomposition
+microbench registered ~78 as the honest ceiling before the run, and the run
+landed on it: composite 74.23 → **77.75 (+4.7%)**, under the +8% adoption
+gate. The vocab-axis lm_head split with a full-logit all_gather kept every
+contract bit-identical (verify diverges at the same token 41 as stage 1), and
+plain TP2 moved +0.5% — communication was never the bottleneck. What the
+rejection bought is the diagnosis: the in-loop draft cost is dominated by
+chain scheduling and gate synchronization, which sharding cannot touch.
+Draft-graph fusion / sync removal is the precondition for any further TP
+lever, and the deep-k economics (wider verify kernel window) attacks the same
+fixed cost from the other side. Ledger `[I113]`-`[PA43]`; patch preserved in
+the spike directory, fork restored.

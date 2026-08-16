@@ -1,0 +1,23 @@
+{
+  "classes": {
+    "mtp_o": "QuantizedShardedToAllLinear",
+    "mtp_down": "QuantizedShardedToAllLinear",
+    "lm_head": "QuantizedAllToShardedLinear",
+    "gather_group_set": true
+  },
+  "forward_maxabs": 0.0,
+  "mtp_forward_maxabs": 0.0,
+  "shapes": {
+    "forward": [
+      1,
+      5,
+      248320
+    ],
+    "mtp": [
+      1,
+      1,
+      248320
+    ]
+  },
+  "verdict": "PASS"
+}
