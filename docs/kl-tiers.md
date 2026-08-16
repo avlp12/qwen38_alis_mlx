@@ -40,8 +40,15 @@ comparison above is a paired measurement over identical token windows.
    (0.0763 → 0.0654), top-1 +0.73 pp, with the biggest slice gain on English
    (−21%) and Korean (−17%). At 6-bit AWQ is −11% KL, at 8-bit the two are
    within noise on en/code but AWQ is significantly better on Korean
-   (0.00124 vs 0.00169). The published 6/8-bit builds stay uniform for now;
-   the AWQ six/eight measurements are recorded here in case that call changes.
+   (0.00124 vs 0.00169). The published 6/8-bit builds stay uniform — I
+   formally evaluated swapping the 6-bit repo to AWQ and rejected it
+   (ledger [PA35]): on paired corpus PPL only English reaches significance
+   (−0.0024 nats ± 0.0014; ko/code indistinguishable), and the per-slice KL
+   deltas sit inside their block-SE noise. The AWQ advantage is real but,
+   unlike at 4-bit where it clears significance on every slice, at 6-bit it
+   is 1-10% of the 4↔8-bit gap — too small to certify a quality claim on.
+   The AWQ measurements stay recorded here in case a larger corpus revisits
+   that call.
 3. **The fp4 variants are dominated at this size point.** nvfp4 costs
    essentially the same disk as affine 4-bit gs64 (15.0 vs 15.2 GB) yet lands
    at 1.26× the KL of uniform and 1.47× the KL of the published AWQ build;

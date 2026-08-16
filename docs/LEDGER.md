@@ -749,3 +749,29 @@ gesicht ~/venv_mlxjit: brew py3.14 --system-site-packages + ~/qwen38/mlx-0.32.0.
   greedy 최고치 갱신 48.3→**51.7**(1.38×). 기본값 뒤집기(rerun 을 디폴트로)는 카노니컬
   수치 개정을 수반하므로 사용자 판단으로 보류. 측정물 `~/qwen38/exp6_rollback/`
   (validate/bench/analyze + out/{greedy,t1_240,t1_1024}.json + diag1~3).
+
+## 사용자 결정 3건 (2026-08-16 오후)
+
+- **[PA32]** rerun 기본값: 권고 수용 — **옵트인 유지**(기본 carry). 카노니컬 수치 개정 없음.
+- **[PA33]** MTPLX "no vision tower" 답글: **게시하지 않음**(사용자 결정, 종결).
+- **[PA34]** 6bit AWQ 게시 교체: 권고 수용 — **재판정 착수**(기존 corpus PPL 대응표본
+  nll_q6awq3_* + KL [I89]로 판정, 유의 우세 확정 시 4bit 전례대로 pre-swap 브랜치 보존
+  후 main 교체). 8bit은 uniform 유지 확정.
+
+## [PA34] 재판정 (2026-08-16)
+
+- **[I95]** 6bit AWQ vs uniform 재판정 완료(GPU 불사용, 기존 측정물만 — compare_ppl.py
+  대응표본 512-블록 SE + [I89] KL 집계). **PPL 축**(AWQ−uniform, 양수=AWQ 나쁨):
+  en −0.00236±0.00135 유의 우세(승률 66%) · ko −0.00041±0.00099 구분불가 ·
+  code +0.00137±0.00237 구분불가(방향 열세) → 유의 우세 1/3. **KL 축**(원시 배열
+  부재로 블록SEM 비대응 z — 보수적): en Δ−0.00075 z≈1.1 · ko Δ−0.00017 z≈0.6 ·
+  code Δ−0.00135 z≈1.2 · overall Δ−0.00073 z≈1.8, 전부 비유의(0/3). top-1은
+  en/ko +0.33pp(z≈2.5)로 근접하나 code +0.12pp 비유의. 악화 유의 slice 0.
+- **[RA19]** [I95] ⇒ AWQ 이득은 비트가 낮을수록 크다는 단조 구조 재확인: 효과가
+  4↔8bit 격차 대비 4bit 15~49% / 6bit 1~10% / 8bit 0~2%. 6bit은 유의성 잡음 경계 —
+  4bit 전례([I43] 전 slice 유의 우세)와 질적으로 다르다.
+- **[PA35]** **판정: 기각.** 사전 등록 게이트(PPL·KL 두 축 모두 slice 과반 유의 우세 +
+  악화 0)에서 PPL 1/3·KL 0/3 로 과반 미달 → HF 6bit main 은 uniform 유지, q6awq3 은
+  로컬·"measured, unpublished" 상태 존속. 8bit uniform 유지([PA34] 지시)와 정합.
+  방향성 전 slice AWQ 우세는 사실이나 게이트 미충족 — 재론하려면 corpus 확장으로
+  검정력을 올려야 한다(현 시점 미착수).
