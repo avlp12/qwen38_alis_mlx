@@ -29,6 +29,7 @@ All measured, all reproducible from [results/](results/) and
 | decode, DSpark drafter (block 8) | 37.6 | **48.3** (1.28x) | same |
 | decode, DSpark + capture-and-rerun rollback (opt-in, 2026-08-16) | 37.5 | **51.7** (1.38x) | `results/exp6_rollback/` |
 | **served** decode over HTTP streaming, gated MTP k=4 (server wiring `b8a8e7c`) | 37.3 | **53.1** greedy / **47.1** t1 (1.42x / 1.28x — server tax ≈0 vs in-process) | `results/exp8_server/` |
+| decode, **two boxes**: TP2 (jaccl RDMA over TB5) x gated MTP | 35.8 | **74.2** (2.07x; plain TP2 alone 1.37x fails its gate — speculation is what makes the second box pay) | `results/tp2_spike/` |
 | decode under shipped sampling (temp 1.0 · top-p 0.95 · top-k 20), gated MTP | 37.2 | **48.1** at 240 tok (1.29x) / **45.1** at 1024 (1.22x) | `results/spec_restate/samp_240.json` / `samp_1024.json` |
 | prefill 8K, one box → two boxes (bitwise-identical output) | 427 tok/s | **733.5** (1.72x) | `results/bench_2box/results_2box.json` |
 | prefill 32K, one box → two boxes | 388 | **733.6** (1.89x) | same + `bonus32k.json` |

@@ -939,3 +939,98 @@ gesicht ~/venv_mlxjit: brew py3.14 --system-site-packages + ~/qwen38/mlx-0.32.0.
   자기-증류 레시피·실측 4종·ko greedy-240 −1.9% 단일 궤적 정직 기재·기존 표는 벤더-헤드
   측정으로 명시 존치). ④ 전용 리포 speculative.md §8 "ships nowhere yet" → 게시 사실로
   갱신 + LEDGER 스냅샷 동기. 산출: HF main 739a5587 · pre-align a71171b8.
+
+---
+
+# 추가 — exp7 종결 평가: jtdavies 제보(4bit × xhigh 사고 폭주) 검증 — **기각** (2026-08-17)
+
+## 정보
+
+- **[I107]** 1차 실행(epsilon, 포크 고정+하드 실패, wired-limit 설정, 3빌드 동시 상주·
+  프롬프트별 빌드 순서 회전): {q4v,q6v,q8v} × 12프롬프트(ko 4) × {greedy, temp1/p0.95/k20
+  ×시드3}, reasoning_effort=xhigh, 캡 4096 — **144/144 전 런이 캡 도달(EOS 미도달),
+  q8v 대조군 포함 폭주율 100%**. 판별력 0(천장 효과). 하네스 무결은 대조 실험으로 확증:
+  쉬운 프롬프트는 low/xhigh·양 빌드 모두 정상 종결(finish=stop, 사고 닫힘, 22~73tok).
+  캡 도달 시점 텍스트는 양 빌드 공히 퇴행 루프가 아닌 **진행 중인 정합적 추론**이고
+  rep4 중앙값 동급(greedy 0.245 vs 0.240). 측정물 epsilon:/Users/m3ms/qwen38/
+  exp7_termination/ + gesicht:~/qwen38/exp7_termination/(results.jsonl).
+- **[I108]** 2차 실행(캡 16384, q4v vs q8v, 8프롬프트=중난도4+고난도4(ko 4) ×
+  {greedy, sampled 시드2} = 48런, 기준은 1차와 동일 유지): 폭주율 **q4v 25.0%(6/24) vs
+  q8v 20.8%(5/24), 비 1.20**. 대응표본 discordant **1:0**(q4v만 캡 1쌍 — p4 greedy,
+  q8v는 10162에 종결). 중난도는 **양 빌드 0%**(사고 중앙값 231~487tok 즉시 종결).
+  고난도 50.0% vs 41.7%. 둘 다 종결한 18쌍의 사고 길이 차(q4v−q8v) 중앙값 +106tok
+  (13/18 쌍에서 q4v가 김, 부호검정 p≈0.10 비유의). rep4 중앙값 0.311 vs 0.313 동급.
+  한국어 폭주율 양 빌드 동일 25%(en 25% vs 16.7%) — ko 특이 격차 없음(results2.jsonl).
+
+## 추론
+
+- **[RA22]** [I107]+[I108] ⇒ 사전 등록 기준(확증: q4v ≥ 2×q8v AND 절대 ≥15% / 기각:
+  <1.25× OR <8%) 대비 비 1.20 → **제보 기각**. "xhigh에서 사고 비종결"이라는 현상
+  자체는 실재하나(고난도에서 사고가 상례적으로 4k~16k+), 그것은 **effort-수준 속성이지
+  4bit 특이 결함이 아니다** — 8bit 대조가 통계적으로 구분 불가한 비율·길이 분포로 같은
+  행동을 보인다. 반복 병리(rep4)도 격차 없음. 잔여 신호는 "q4v 사고가 약간 긴 경향"
+  (중앙값 +106tok, 비유의) 하나뿐 — 후속 검정력 없이는 주장 불가로 기록만 남긴다.
+
+## 결정
+
+- **[PA41]** 카드 수정 없음(본선 결정 대기). 권고: 카드 사용 노트에 "reasoning_effort
+  xhigh는 고난도 프롬프트에서 사고 채널이 4k~16k+ 토큰에 달하는 것이 정상 — max_tokens
+  를 넉넉히 잡거나 medium 사용 권장, 양자화 비트폭과 무관" 취지 1문 추가 검토.
+  jtdavies 회신 시 본 기각 근거(대조군 동일 거동·대응표본 1:0) 인용 가능.
+
+---
+
+# 추가 — TP2+jaccl 디코드 스파이크: 복합 게이트 통과 — **채택 검토** (2026-08-17)
+
+## 정보
+
+- **[I109]** **jaccl RDMA all_sum 의존-사슬 실측**(TB5 en4↔en4, [1,S,5120] bf16,
+  500연쇄): t_as **S=1 21.87µs · S=8 33.92µs**, 디코드 1스텝 comm 시뮬(128연쇄)
+  **2.727ms**. ring(TCP) 대조 1회: 459.34µs·스텝 56.5ms — [RA2] 예상대로 산술 탈락,
+  jaccl 전제 확증. 킬 게이트(35µs) 통과. 측정물 out/allsum.json·allsum_ring.json.
+- **[I110]** **verify(TP2 vs 1박스 greedy 64토큰)**: code/math/ko **완전 일치**,
+  chat 만 41번째 토큰 분기 — [I80] fp-드리프트 클래스, 기능 동치 기준(선두 32+) PASS.
+  TP2 배선(qwen3_5 `Model.shard`: GDN head-축 + attn/MLP Quantized{AllToSharded,
+  ShardedToAll}) 정확성 확인. fast_qmm 샤딩-클래스 패치(1e22e21)가 실제로 물리는 것
+  grep 오라클로 확인. 측정물 out/verify.json·verify_compare.json.
+- **[I111]** **본 벤치**(q4v, 4프롬 정본×2회전 교차·냉각, EOS-컷, wired-limit,
+  당일 differential control 동일 프로세스 클래스):
+  | 구성 | tok/s | vs control 35.83 | vs 정본 37.6 |
+  |---|---|---|---|
+  | 1박스 평문 (control) | **35.83** | 1.00× | 0.95× |
+  | 1박스 mtp4p (control) | **57.51** | 1.60× | 1.53× |
+  | TP2 평문 | **48.96** | 1.37× | 1.30× |
+  | **TP2×mtp4p 복합** | **74.23** | **2.07×** | **1.97×** |
+  복합 프롬별: chat 72.3 · code 72.0 · math 89.9 · ko 62.7 (2회전 편차 <1%).
+  측정물 out/decode_tp2.json·mtp_tp2.json·control.json.
+- **[I112]** 운영 함정 3(재사용용): ① `mlx.distributed_config` 는 인터랙티브 sudo
+  네트워크 재설정을 요구 — jaccl 은 coordinator IP(기존 10.0.0.1)+`rdma_en4` 만 있으면
+  되므로 **hostfile 수동 작성으로 우회**(시스템 무변경, out/../hosts.json) ② 이 휠의
+  `mlx.launch --python` 은 명령에 반영되지 않음(스크립트 직접 exec, rc=126) — **명령
+  자체에 python 경로를 넣어야** 함 ③ mlx.launch 는 스크립트를 원격 복사하지 않고
+  셸-쿼팅으로 틸드 확장도 막힘 — 양 박스 홈 대칭 배치 후 **홈-상대경로 발사**로 해결.
+  포크 동기는 epsilon `pip install -e ~/mlx-lm-fork`(venv) + gesicht 는 PYTHONPATH
+  강제(homebrew mlx_lm 폴스루가 editable finder 를 가림 — venv system-site 함정).
+
+## 추론
+
+- **[RA23]** [I109] t_as 21.87µs 는 [RA1] 민감도표의 1.4× 경계(21µs) 바로 위 —
+  평문 TP2 실측 1.37×는 산술 예측(≈1.40×)과 정합. 평문 게이트 미달은 comm 지연이
+  아니라 **예산 산술 그대로의 결과**(스텝 ≈16.3+2.7ms). 반면 복합은 검증 forward 가
+  TP 로 반감되며 드래프트 비용(비샤딩, [I9])이 은폐돼 **2.07×** — sudoingX 증폭
+  실증([qwen38 캠페인])과 같은 방향, 폭은 더 큼(fast_qmm 샤딩-클래스 확장 [I6] 수정이
+  선반영된 덕 — [RA4] 전제 충족).
+- **[RA24]** ko 62.7 이 최저(수락률 열세 — 기존 mtp4p ko 경향과 일치)이나 게이트
+  상회하고, **셀 대조로도 단일박스 mtp4p ko(51.35/51.46) 대비 +22%** — TP 증폭이
+  ko 에서도 성립(복합 채택 시 ko 퇴행 없음). 2단계 레버(MTP 블록+lm_head 샤딩,
+  [RA3] 산술 ~87tok/s)는 미착수 — 채택 확정 시 후속 스파이크 후보.
+
+## 결정
+
+- **[PA42]** **판정: 채택 검토**([PA2] 기준 — 복합 ≥1.8× 충족, 평문 1.4× 미달).
+  TP2×MTP = **74.23 tok/s (복합 게이트 67.7 상회, differential 2.07×)**. 서빙 통합
+  여부는 사용자 판단 대기(2박스 상시 점유 트레이드오프 — :39919 프리필 러너와의 공존
+  설계 필요). 전망: 2box 프리필 733 tok/s와 결합하면 **프리필 733 + 디코드 74 의
+  완전-2박스 스택**이 성립 — 프리필·디코드가 같은 2박스 점유를 공유하므로 결합이
+  자연스러움(러너 아키텍처 통합은 별도 과제). 측정물 전량 ~/qwen38/tp2_spike/out/
+  영구 보존, 포크 무변경(1e22e21 기존재 배선 그대로), 시스템 네트워크 무변경.

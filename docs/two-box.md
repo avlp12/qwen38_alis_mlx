@@ -124,3 +124,38 @@ multi-turn with big documents). Next levers, unstarted `[PA22]`: a four-stage
 layer interleave to halve the fill bubble (bounded ≈+3-5%, at 3x transfers per
 chunk), and a decode-side two-box (tensor-parallel over TB5) as its own campaign
 with its own speculative-decoding interactions.
+
+## Addendum (2026-08-17): the second box now pays at decode too — via speculation
+
+The original verdict above was that TB5 tensor-parallel *decode* was not worth
+it; the two-box win was prefill-only. The TP2+jaccl spike revisits that with
+two things the first pass lacked: RDMA-over-Thunderbolt (jaccl backend,
+`all_sum` at **21.87µs** measured on a dependency chain — the TCP ring's 459µs
+made the whole idea stillborn) and the split-K kernel extended to the sharded
+quantized linears (`1e22e21`), so the speculative verify widths keep their
+kernel inside TP.
+
+Measured (4-prompt canon, alternated with cooldowns, EOS-cut, same-day
+controls):
+
+| config | tok/s | vs 1-box plain |
+|---|---:|---:|
+| 1-box plain (control) | 35.83 | 1.00x |
+| 1-box gated MTP k=4 (control) | 57.51 | 1.60x |
+| TP2 plain | 48.96 | 1.37x |
+| **TP2 x gated MTP** | **74.23** | **2.07x** |
+
+Plain TP2 **fails** its 1.4x gate — and does so exactly on schedule: the
+per-step 128 all-reduces at 21.87µs land within a hair of the pre-registered
+break-even arithmetic. The composite **passes** its 1.8x gate with room
+(74.23 vs 67.7): shrinking the per-forward time amplifies what each accepted
+draft token is worth, so speculation converts a failing TP into a passing one
+(+29% on top of the single-box MTP record; Korean 62.7, +22% over its
+single-box cell — no regression). This is the same TPxMTP amplification
+reported externally on another stack, reproduced here with paired controls.
+Verification: 3 of 4 prompts token-exact over 64 tokens against the single
+box, the fourth diverging at token 41 within the established fp-drift class.
+
+Ledger `[I109]`-`[PA42]`; raw JSONs in `results/tp2_spike/`. Not integrated
+into serving yet — that call, and the stage-2 lever (sharding the MTP block
+and lm_head, paper arithmetic ~87 tok/s), are open.
