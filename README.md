@@ -47,13 +47,7 @@ original bf16 bytes) and the vendor MTP head (31 tensors)**:
 - [avlp12/Qwen3.8-27B-Alis-MLX-6bit](https://huggingface.co/avlp12/Qwen3.8-27B-Alis-MLX-6bit) — 21.5 GB, 27.3 tok/s; the balanced default, Korean PPL indistinguishable from bf16
 - [avlp12/Qwen3.8-27B-Alis-MLX-4bit](https://huggingface.co/avlp12/Qwen3.8-27B-Alis-MLX-4bit) — 15.2 GB, 37.5 tok/s plain / 62.2 speculative; AWQ recipe; the reach build for 24-32 GB Macs, with a real, documented quality cost
 
-On the preservation claim, stated precisely: my 2026-08-15 survey of the public
-MLX builds of this model found **all 12 surveyed builds carried 0 vision
-tensors** (including repos named `-vision`; 7 of 12 shipped an image
-preprocessor config next to weights that cannot process an image). mlx-vlm-based
-`mlx-community` conversions that preserve the tower appeared around the same
-time (created 2026-08-14) and were missed by that survey's search — but those
-drop the **MTP head** (0 of 31 tensors). A 2026-08-16 census of 283 MLX-tagged repos found other builds carrying both subsystems as well (the earliest 17 hours before mine), and an earlier "only vision-preserving" claim I made counted with the wrong key pattern (`.visual.` misses the `vision_tower.*` naming mlx-vlm-family builds use). This repo's guarantee is therefore its own verified pass-through — byte-identical vision tensors, quantized MTP head, and end-to-end image + speculative decoding checks — not exclusivity.md](docs/conversion-integrity.md).
+On the preservation claim, a correction (2026-08-16): my 2026-08-15 survey reported "all 12 surveyed builds carried 0 vision tensors" — that count used the wrong key pattern (`.visual.`), which misses the `vision_tower.*` naming that mlx-vlm-family conversions use. A follow-up census of 283 MLX-tagged repos found `mlx-community` builds preserving the vision tower (333 tensors, 0 MTP), and other builds carrying **both** subsystems, the earliest published 17 hours before mine. So: no "first" and no "only". What this repo guarantees is its own verified pass-through — byte-identical vision tensors, a quantized MTP head, and end-to-end image + speculative-decoding checks — with the mechanism and receipts in [docs/conversion-integrity.md](docs/conversion-integrity.md).
 
 ## Upstream contributions
 
