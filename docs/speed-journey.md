@@ -28,7 +28,7 @@ EOS-cut long-form, dependency-chained timing, thermal alternation.
 | 11 | TP2 plain (jaccl RDMA over TB5; `all_sum` 21.87µs) | 49.0 | 1.37x | **rejected** — lands exactly on the pre-registered break-even arithmetic |
 | 12 | **TP2 x gated MTP composite** | **74.2** | **2.07x** | **adopted — serving integration in progress**; shrinking per-forward time amplifies speculation (+29% over the single-box MTP record) |
 | 13 | TP2 stage 2 (shard the MTP block + lm_head) | 77.8 | +4.7% < +8% gate | **rejected** — decomposition proved the in-loop draft cost is chain scheduling/sync, which sharding cannot touch |
-| 14 | **TP2 x gated MTP, served over HTTP** (on-demand launch of the full two-box stack) | **62.9** greedy / **57.7** t1 | +18.5% / +22.4% over the single-box served record | **adopted** — one stack also delivers ~650 tok/s prefill; the 15% serving tax (vs ~0% on one box) is the new frontier |
+| 14 | **TP2 x gated MTP, served over HTTP** (on-demand launch of the full two-box stack) | **62.9** greedy / **57.7** t1 | +18.5% / +22.4% over the single-box served record | **adopted** — one stack also delivers ≈650 tok/s prefill; the 15% serving tax (vs ≈0% on one box) is the new frontier |
 | — | KV cache quantization | decode −3% | — | long-context only |
 
 \* Row 9's absolute figures live in that harness's short-prompt 240-token
@@ -39,17 +39,17 @@ rows.
 
 | # | attempt | result (tok/s) | vs baseline | verdict |
 |---|---|---:|---:|---|
-| 0 | **first 4-bit build** | **~430** | 1.00x | baseline |
+| 0 | **first 4-bit build** | **≈430** | 1.00x | baseline |
 | 1 | fused SDPA for head_dim 256 (mlx core fork, branch `alis`) + the prefill accounting | single-box engine ceiling confirmed at 96-99% | — | adopted |
 | 2 | `prefill_step_size` 8192 | no gain (2048 plateau) | — | refuted |
 | 3 | **two-box layer-pipelined prefill (TB5, bitwise-identical output)** | **733** (1.72x @8K, 1.89x @32K) | **1.72x** | **adopted** (`--prefill-2box`) |
 | 4 | served TTFT, 8.3K-token streaming request | 20.3 s → 11.9 s | 1.705x | adopted |
-| 5 | TP2 prefill (same stack as the served decode) | ~650 (TTFT 12.8 s on 8.3K) | 1.58-1.61x | adopted for interactive serving; the layer pipeline still wins bulk prefill (733) |
+| 5 | TP2 prefill (same stack as the served decode) | ≈650 (TTFT 12.8 s on 8.3K) | 1.58-1.61x | adopted for interactive serving; the layer pipeline still wins bulk prefill (733) |
 
 ## The trajectory in one line
 
 Decode: 37.6 → 52.8 single-box (53.1 served; +6.1% more at the operating
-point from the realigned head) → **74.2 on two boxes (2.07x)**. Prefill: ~430
+point from the realigned head) → **74.2 on two boxes (2.07x)**. Prefill: ≈430
 → **733 (1.72x)**. Six rejections preserved with their diagnoses — the two
 that matter most for what comes next: dispatch is already hidden in the plain
 loop (so fusion pays only inside the speculative loop), and the speculative
