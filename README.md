@@ -86,6 +86,8 @@ On the preservation claim, a correction (2026-08-16): my 2026-08-15 survey repor
 
 ```
 docs/
+  HANDOFF.md               zero-prior-knowledge handoff: what to read, what the numbers
+                           are, the rules and rejections, what data already exists, what's open
   LEDGER.md                the campaign's working ledger (Korean, AIF-structured;
                            every number resolves to a node here — the heart of the repo)
   conversion-integrity.md  the silently dropped vision tower, the pass-through design,
