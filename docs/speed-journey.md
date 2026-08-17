@@ -28,6 +28,7 @@ EOS-cut long-form, dependency-chained timing, thermal alternation.
 | 11 | TP2 plain (jaccl RDMA over TB5; `all_sum` 21.87µs) | 49.0 | 1.37x | **rejected** — lands exactly on the pre-registered break-even arithmetic |
 | 12 | **TP2 x gated MTP composite** | **74.2** | **2.07x** | **adopted — serving integration in progress**; shrinking per-forward time amplifies speculation (+29% over the single-box MTP record) |
 | 13 | TP2 stage 2 (shard the MTP block + lm_head) | 77.8 | +4.7% < +8% gate | **rejected** — decomposition proved the in-loop draft cost is chain scheduling/sync, which sharding cannot touch |
+| 14 | **TP2 x gated MTP, served over HTTP** (on-demand launch of the full two-box stack) | **62.9** greedy / **57.7** t1 | +18.5% / +22.4% over the single-box served record | **adopted** — one stack also delivers ~650 tok/s prefill; the 15% serving tax (vs ~0% on one box) is the new frontier |
 | — | KV cache quantization | decode −3% | — | long-context only |
 
 \* Row 9's absolute figures live in that harness's short-prompt 240-token
@@ -43,7 +44,7 @@ rows.
 | 2 | `prefill_step_size` 8192 | no gain (2048 plateau) | — | refuted |
 | 3 | **two-box layer-pipelined prefill (TB5, bitwise-identical output)** | **733** (1.72x @8K, 1.89x @32K) | **1.72x** | **adopted** (`--prefill-2box`) |
 | 4 | served TTFT, 8.3K-token streaming request | 20.3 s → 11.9 s | 1.705x | adopted |
-| 5 | TP2 prefill | being measured in the serving-integration lane | — | in progress |
+| 5 | TP2 prefill (same stack as the served decode) | ~650 (TTFT 12.8 s on 8.3K) | 1.58-1.61x | adopted for interactive serving; the layer pipeline still wins bulk prefill (733) |
 
 ## The trajectory in one line
 
