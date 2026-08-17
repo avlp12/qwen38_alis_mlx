@@ -173,3 +173,47 @@ Draft-graph fusion / sync removal is the precondition for any further TP
 lever, and the deep-k economics (wider verify kernel window) attacks the same
 fixed cost from the other side. Ledger `[I113]`-`[PA43]`; patch preserved in
 the spike directory, fork restored.
+
+## On-demand full two-box serving (2026-08-17)
+
+The TP2 decode result of the previous section now runs as a served stack: one
+launch brings up `mlx_lm.server` across both boxes (rank 0 serves HTTP, rank 1
+joins the generation loop in lockstep; requests are pickled and broadcast).
+Measured over HTTP streaming, four prompts x three alternated boots, EOS-cut:
+
+| arm | TP2 served | one box served | in-process |
+|---|---:|---:|---:|
+| plain, greedy | 47.84 | — | 48.96 (−2.3% tax) |
+| plain, t1 | 47.88 | — | — |
+| **gated MTP, greedy** | **62.90** | 53.06 (**+18.5%**) | 74.23 (−15.3% tax) |
+| **gated MTP, t1** | **57.66** | 47.11 (**+22.4%**) | — |
+
+TTFT on an 8,330-token prompt: 12.82 s with MTP, 12.57 s plain (~650-660
+tok/s prefill) against 20.29 s on one box — so a single TP2 stack delivers
+1.6x prefill *and* the best served decode simultaneously. The layer-pipelined
+split still wins prefill outright (11.91 s, ~700 tok/s), so the choice is
+workload-shaped: TP2 for interactive serving where decode dominates, the
+pipeline for bulk long-prompt ingestion. Greedy output is character-identical
+to the non-speculative control on all twelve cells.
+
+**The serving tax is now the frontier.** One box paid ~0% for going through
+HTTP; TP2 pays 15%. The reason is arithmetic: TP2 cuts the step to ~13 ms, so
+rank 0's fixed per-token cost (SSE framing, detokenizer) stops being noise.
+The next lever here is the streaming layer, not the kernel.
+
+### The wedge rule, bought the hard way
+
+Three separate deadlocks were chased through an RNG-divergence hypothesis and
+two attempted fixes before the decisive control ran: restoring the exact code
+that had worked an hour earlier **still failed**, and a reboot of the second
+box made the same code pass on the first try — including the sampled arm that
+had never once completed. The deadlocks were not a code defect at all; they
+were the residue of an earlier collective deadlock that process teardown does
+not clear. The operating rule that follows (`[RA27]`): **a box that has
+suffered a distributed-collective deadlock is rebooted before the next
+experiment, and failures observed in that state are not admissible evidence
+about code.** Without it, hours went into fixing a defect that did not exist.
+
+Scripts: `launch_full2box.sh` / `stop_full2box.sh` (TERM-only teardown, health
+gate, smoke check). Not a resident daemon — it is brought up on demand.
+Ledger `[I115]`-`[PA44]`, raw JSONs in `results/serving_full2box/`.
