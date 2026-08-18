@@ -84,6 +84,20 @@ coverage. A patch extending the fused path (shipped as
 `code/patches/mlx_hd256_sdpa.patch`, 26 lines, gated to K <= 3 alongside the
 existing T gate; against-fp32 error no worse than the fallback it replaces)
 measured: **+3.2%** on 8192-token single-chunk prefill, +0.6% at 2048 `[I53]`.
+
+> **Retired 2026-08-18, on measurement.** Merging mlx v0.32.1 and re-running the
+> same A/B against stock inverts this: isolated SDPA, three alternated rotations
+> with cooldowns, the patch is **12.5% slower at 2048x2048** (5.65 → 6.36 ms) and
+> 6% slower at 4096, keeping only a 1.6% win at 8192. Upstream widened the
+> full-attention head-dim list to 64/72/80/96/128 in that release and tuned the
+> fallback this patch was competing with. Since production prefill runs 2048-token
+> chunks — 8192 having been refused earlier as no better than the 2048 plateau —
+> the one shape where it still wins is the one configuration this stack does not
+> use, so the dispatch change is reverted upstream-of-us in `avlp12/mlx@alis`.
+> The wiring was checked first: patched and stock builds return different values
+> for identical input, so what was measured was the patch, not a bypass.
+> **A shape-windowed optimization is a claim about the run-time distribution, and
+> a compiler release can move the distribution out from under it.**
 The hoped-for +25-32% on the attention lane was **rejected by measurement** —
 attention is only a quarter of prefill (next section), and the unfused fallback
 was less bad than assumed. Kept because it is small, correct, and free.

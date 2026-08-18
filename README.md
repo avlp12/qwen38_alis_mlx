@@ -80,7 +80,7 @@ On the preservation claim, a correction (2026-08-16): my 2026-08-15 survey repor
 - [ml-explore/mlx #4246](https://github.com/ml-explore/mlx/issues/4246) — `gather_qmm` throughput gap for MoE-typical small groups
 
 
-> Kernel work now has a canonical home: [avlp12/mlx](https://github.com/avlp12/mlx) (branch `alis` = v0.32.0 + the SDPA head_dim-256 fused path, with the kernel roadmap in `docs/ALIS_KERNELS.md`). The patch in `code/patches/` is the same change; the fork is where it evolves.
+> Kernel work has a canonical home: [avlp12/mlx](https://github.com/avlp12/mlx) (branch `alis`, kernel roadmap in `docs/ALIS_KERNELS.md`). It tracked v0.32.0 plus an SDPA head_dim-256 fused path; **that patch was retired on 2026-08-18** after merging v0.32.1 — upstream widened the full-attention head-dim list and tuned the path it competed with, and a re-run of the same A/B found it 12.5% *slower* at the 2048-token chunk this stack actually prefills with (it still wins 1.6% at 8192, a chunk size measured and refused earlier). The branch now tracks v0.32.1 with no functional delta; the snapshot in `code/patches/` is kept as the record of what was tried. See `docs/kernels.md` §3.
 
 ## Repository map
 

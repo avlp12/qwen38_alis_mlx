@@ -69,8 +69,10 @@ Silicon(M3 Ultra 512GB ×2, TB5 연결)에서 **양자화·가속·게시**한 �
   `6ff2474`(fast_qmm 비-affine 폴백) · `fcd986a`(capture-and-rerun 옵트인) ·
   `1e22e21`(fast_qmm TP 샤딩 클래스 확장) · `b8a8e7c`(서버 게이트 MTP) ·
   `d3eb157`(read_last 옵트인).
-- **[I9]** **mlx 코어 포크** avlp12/mlx 브랜치 `alis` = v0.32.0 + SDPA head_dim-256 융합
-  (`b01cc5c8d`), 로드맵 `docs/ALIS_KERNELS.md`.
+- **[I9]** **mlx 코어 포크** avlp12/mlx 브랜치 `alis` — **현재 v0.32.1 추적, 기능 델타 0**
+  (`abdaa7f01`). SDPA head_dim-256 융합은 0.32.0 에서 채택했다가 **0.32.1 에서 은퇴**했다:
+  상류가 head-dim 목록을 넓히고 경쟁 경로를 튜닝하면서, 우리 운용 형상(2048 청크)에서
+  12.5% 느려졌다([CA16]). 로드맵 `docs/ALIS_KERNELS.md`, 다음 후보는 mlx#4265 소량-M 커널.
 - **[I10]** 상류 기여: mlx-lm PR #1735(이중 RMSNorm 시프트 무성 손상 수정) · mlx #4265
   (소량-M qmm — **CONTRIBUTOR가 커널 랜딩 지지**, 코어 PR 초대 상태) · #4253(gather_mm
   무성 오답, **수정 확인·종결**) · #4246(gather_qmm MoE 소그룹).
