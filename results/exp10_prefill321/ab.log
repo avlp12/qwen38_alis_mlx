@@ -1,0 +1,31 @@
+[13:24:10] ── 회전 1: 구(0.32.0+패치) ──
+[bench] mlx=0.32.0.dev20260816+7a1d4f5 fork=/Users/gesicht/glm5.2/mlx-lm/mlx_lm
+  N=8192 rep0: 19.672s  416.4 tok/s
+  N=8192 rep1: 19.871s  412.3 tok/s
+BENCH1BOX-DONE
+[13:27:01] ── 회전 1: 신(0.32.1 순정) ──
+[bench] mlx=0.32.1.dev20260818+3a6219917 fork=/Users/gesicht/glm5.2/mlx-lm/mlx_lm
+  N=8192 rep0: 19.106s  428.8 tok/s
+  N=8192 rep1: 19.251s  425.5 tok/s
+BENCH1BOX-DONE
+[13:29:49] ── 회전 2: 구(0.32.0+패치) ──
+[bench] mlx=0.32.0.dev20260816+7a1d4f5 fork=/Users/gesicht/glm5.2/mlx-lm/mlx_lm
+  N=8192 rep0: 19.551s  419.0 tok/s
+  N=8192 rep1: 19.677s  416.3 tok/s
+BENCH1BOX-DONE
+[13:32:38] ── 회전 2: 신(0.32.1 순정) ──
+[bench] mlx=0.32.1.dev20260818+3a6219917 fork=/Users/gesicht/glm5.2/mlx-lm/mlx_lm
+  N=8192 rep0: 19.098s  428.9 tok/s
+  N=8192 rep1: 19.234s  425.9 tok/s
+BENCH1BOX-DONE
+[13:35:25] ── 회전 3: 구(0.32.0+패치) ──
+[bench] mlx=0.32.0.dev20260816+7a1d4f5 fork=/Users/gesicht/glm5.2/mlx-lm/mlx_lm
+  N=8192 rep0: 19.714s  415.5 tok/s
+  N=8192 rep1: 19.735s  415.1 tok/s
+BENCH1BOX-DONE
+[13:38:14] ── 회전 3: 신(0.32.1 순정) ──
+[bench] mlx=0.32.1.dev20260818+3a6219917 fork=/Users/gesicht/glm5.2/mlx-lm/mlx_lm
+  N=8192 rep0: 19.158s  427.6 tok/s
+  N=8192 rep1: 19.298s  424.5 tok/s
+BENCH1BOX-DONE
+[13:41:01] AB-ALT-DONE

@@ -39,12 +39,13 @@ rows.
 
 | # | attempt | result (tok/s) | vs baseline | verdict |
 |---|---|---:|---:|---|
-| 0 | **first 4-bit build** | **≈430** | 1.00x | baseline |
+| 0 | **first 4-bit build** | **≈430** | 1.00x | baseline (427.2 canonical, mlx 0.32.0; see row 6 — the baseline itself moved with the compiler) |
 | 1 | fused SDPA for head_dim 256 (mlx core fork, branch `alis`) + the prefill accounting | single-box engine ceiling confirmed at 96-99% | — | adopted |
 | 2 | `prefill_step_size` 8192 | no gain (2048 plateau) | — | refuted |
 | 3 | **two-box layer-pipelined prefill (TB5, bitwise-identical output)** | **733** (1.72x @8K, 1.89x @32K) | **1.72x** | **adopted** (`--prefill-2box`) |
 | 4 | served TTFT, 8.3K-token streaming request | 20.3 s → 11.9 s | 1.705x | adopted |
 | 5 | TP2 prefill (same stack as the served decode) | ≈650 (TTFT 12.8 s on 8.3K) | 1.58-1.61x | adopted for interactive serving; the layer pipeline still wins bulk prefill (733) |
+| 6 | **mlx 0.32.1, with the head_dim-256 patch retired** | **441.3** one box (was 427.2) | **+3.3%** on the single-box baseline | adopted — measured on two boxes at 3x different load, both showing +2.5-2.6% against the old build in alternated A/B |
 
 ## The trajectory in one line
 

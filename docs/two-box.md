@@ -8,6 +8,13 @@ Thunderbolt 5 link: **8192-token prefill 427 → 733.5 tok/s (1.72x), 32K
 388 → 733.6 (1.89x), with bitwise-identical outputs.** Ledger: `[I55]`-`[I63]`,
 `[PA21]`-`[PA22]` in [LEDGER.md](LEDGER.md); raw records in
 `results/bench_2box/`.
+>
+> **Baseline note (2026-08-18):** the single-box figure this ratio divides by has
+> since moved. On mlx 0.32.1 with the head_dim-256 patch retired, one box prefills at
+> **441.3 tok/s** (quiet box; +2.5-2.6% over the old build, reproduced on two machines at
+> 3x different load). Against that baseline the two-box pipeline is **1.66x**, not 1.72x —
+> the denominator grew, the pipeline did not shrink. The 733 figure itself has not been
+> re-measured on 0.32.1.
 
 ## 1. Feasibility gates, measured before any code
 

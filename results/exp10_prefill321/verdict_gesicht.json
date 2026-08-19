@@ -1,0 +1,39 @@
+{
+ "protocol": "8K prompt, chunk 2048, bench_2box.bench_one_1box, 3 alternated rotations x 2 reps, 45s cooldown",
+ "box": "gesicht (load ~4.9 during measurement: bun 99%, Chrome 91%, WindowServer 54%)",
+ "baseline_reference": {
+  "value": 427.2,
+  "build": "0.32.0.dev+7a1d4f5 + hd256 patch",
+  "date": "2026-08-16",
+  "note": "quiet box"
+ },
+ "arms": {
+  "old_0320_with_patch": {
+   "runs": [
+    416.4386999450525,
+    412.26523807788215,
+    419.0134264355081,
+    416.3333594222306,
+    415.53740095970437,
+    415.1065299407357
+   ],
+   "median": 415.9353801909675,
+   "mean": 415.78
+  },
+  "new_0321_stock": {
+   "runs": [
+    428.7584627039682,
+    425.5413895071659,
+    428.94217043145613,
+    425.90652150644974,
+    427.6029761422006,
+    424.5098021847741
+   ],
+   "median": 426.75474882432513,
+   "mean": 426.88
+  }
+ },
+ "ratio_new_over_old": 1.026,
+ "overlap": false,
+ "verdict": "0.32.1 without the retired hd256 patch is 2.6% faster at the production prefill shape; distributions do not overlap"
+}

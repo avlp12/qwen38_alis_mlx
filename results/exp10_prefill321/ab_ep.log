@@ -1,0 +1,89 @@
+[13:43:01] ── 회전 1 구(0.32.0+hd256패치) ──
+[bench] host=Episilon.local mlx=0.32.0.dev20260816+7a1d4f5 fork=/Users/m3ms/glm5.2/mlx-lm/mlx_lm
+Traceback (most recent call last):
+  File "/Users/m3ms/qwen38/exp10_prefill321/bench1box_ep.py", line 22, in <module>
+    r = bench_one_1box(model, toks, 2048); r["N"] = N; r["rep"] = rep
+  File "/Users/m3ms/mlx-lm-fork/mlx_lm/prefill_2box/bench_2box.py", line 194, in bench_one_1box
+    cache, t_prefill, t_chunks = single_box_prefill(model, tokens[:-1], chunk)
+                                 ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/m3ms/mlx-lm-fork/mlx_lm/prefill_2box/bench_2box.py", line 92, in single_box_prefill
+    model(toks[:, pos : pos + n], cache=cache, num_logits=1)
+    ~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: Model.__call__() got an unexpected keyword argument 'num_logits'
+[13:43:03] ✗ 구 실패
+[13:43:11] ── 회전 1 구(0.32.0+hd256패치) ──
+[bench] host=Episilon.local mlx=0.32.0.dev20260816+7a1d4f5 fork=/Users/m3ms/glm5.2/mlx-lm/mlx_lm
+Traceback (most recent call last):
+  File "/Users/m3ms/qwen38/exp10_prefill321/bench1box_ep.py", line 22, in <module>
+    r = bench_one_1box(model, toks, 2048); r["N"] = N; r["rep"] = rep
+  File "/Users/m3ms/mlx-lm-fork/mlx_lm/prefill_2box/bench_2box.py", line 194, in bench_one_1box
+    cache, t_prefill, t_chunks = single_box_prefill(model, tokens[:-1], chunk)
+                                 ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/m3ms/mlx-lm-fork/mlx_lm/prefill_2box/bench_2box.py", line 92, in single_box_prefill
+    model(toks[:, pos : pos + n], cache=cache, num_logits=1)
+    ~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: Model.__call__() got an unexpected keyword argument 'num_logits'
+[13:43:13] ✗ 구 실패
+[13:43:59] ── 회전 1 신(0.32.1) ──
+Traceback (most recent call last):
+  File "/Users/m3ms/qwen38/exp10_prefill321/bench1box_ep.py", line 10, in <module>
+    from mlx_lm.prefill_2box.bench_2box import bench_one_1box
+ModuleNotFoundError: No module named 'mlx_lm.prefill_2box'
+[13:44:01] ✗ 신 실패
+[13:44:09] ── 회전 1 신(0.32.1) ──
+Traceback (most recent call last):
+  File "/Users/m3ms/qwen38/exp10_prefill321/bench1box_ep.py", line 10, in <module>
+    from mlx_lm.prefill_2box.bench_2box import bench_one_1box
+ModuleNotFoundError: No module named 'mlx_lm.prefill_2box'
+[13:44:10] ✗ 신 실패
+[13:45:01] ── 회전 2 구(0.32.0+hd256패치) ──
+[bench] host=Episilon.local mlx=0.32.0.dev20260816+7a1d4f5 fork=/Users/m3ms/glm5.2/mlx-lm/mlx_lm
+Traceback (most recent call last):
+  File "/Users/m3ms/qwen38/exp10_prefill321/bench1box_ep.py", line 22, in <module>
+    r = bench_one_1box(model, toks, 2048); r["N"] = N; r["rep"] = rep
+  File "/Users/m3ms/mlx-lm-fork/mlx_lm/prefill_2box/bench_2box.py", line 194, in bench_one_1box
+    cache, t_prefill, t_chunks = single_box_prefill(model, tokens[:-1], chunk)
+                                 ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/m3ms/mlx-lm-fork/mlx_lm/prefill_2box/bench_2box.py", line 92, in single_box_prefill
+    model(toks[:, pos : pos + n], cache=cache, num_logits=1)
+    ~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: Model.__call__() got an unexpected keyword argument 'num_logits'
+[13:45:03] ✗ 구 실패
+[13:45:10] ── 회전 2 구(0.32.0+hd256패치) ──
+[bench] host=Episilon.local mlx=0.32.0.dev20260816+7a1d4f5 fork=/Users/m3ms/glm5.2/mlx-lm/mlx_lm
+Traceback (most recent call last):
+  File "/Users/m3ms/qwen38/exp10_prefill321/bench1box_ep.py", line 22, in <module>
+    r = bench_one_1box(model, toks, 2048); r["N"] = N; r["rep"] = rep
+  File "/Users/m3ms/mlx-lm-fork/mlx_lm/prefill_2box/bench_2box.py", line 194, in bench_one_1box
+    cache, t_prefill, t_chunks = single_box_prefill(model, tokens[:-1], chunk)
+                                 ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/m3ms/mlx-lm-fork/mlx_lm/prefill_2box/bench_2box.py", line 92, in single_box_prefill
+    model(toks[:, pos : pos + n], cache=cache, num_logits=1)
+    ~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: Model.__call__() got an unexpected keyword argument 'num_logits'
+[13:45:12] ✗ 구 실패
+[13:46:06] ── 회전 1 구(0.32.0+hd256패치) ──
+[bench] host=Episilon.local mlx=0.32.0.dev20260816+7a1d4f5 fork=/Users/m3ms/mlx-lm-fork/mlx_lm
+  rep0: 18.886s  433.8 tok/s
+  rep1: 19.027s  430.5 tok/s
+  rep2: 19.035s  430.4 tok/s
+BENCH-DONE
+[13:50:06] ── 회전 1 신(0.32.1) ──
+[bench] host=Episilon.local mlx=0.32.1 fork=/Users/m3ms/mlx-lm-fork/mlx_lm
+  rep0: 19.098s  428.9 tok/s
+  rep1: 18.569s  441.2 tok/s
+  rep2: 18.561s  441.3 tok/s
+BENCH-DONE
+[13:54:06] ── 회전 2 구(0.32.0+hd256패치) ──
+[bench] host=Episilon.local mlx=0.32.0.dev20260816+7a1d4f5 fork=/Users/m3ms/mlx-lm-fork/mlx_lm
+  rep0: 18.888s  433.7 tok/s
+  rep1: 19.031s  430.5 tok/s
+  rep2: 19.038s  430.3 tok/s
+BENCH-DONE
+[13:58:07] ── 회전 2 신(0.32.1) ──
+[bench] host=Episilon.local mlx=0.32.1 fork=/Users/m3ms/mlx-lm-fork/mlx_lm
+  rep0: 18.421s  444.7 tok/s
+  rep1: 18.560s  441.4 tok/s
+  rep2: 18.568s  441.2 tok/s
+BENCH-DONE
+[14:02:06] AB-EP-DONE
