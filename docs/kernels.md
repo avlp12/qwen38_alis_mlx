@@ -229,7 +229,7 @@ Two beliefs died against that account:
 Verdict `[PA19]`: single-box prefill is **closed** — every remaining lever sums
 to 4.5-6.9%, part of it already harvested by the SDPA fusion. The breakthrough
 axis is two boxes ([two-box.md](two-box.md)), which took 8192-token prefill from
-427 to 733.5 tok/s on this same model.
+440 to 755.2 tok/s on this same model.
 
 ## What transfers beyond this model
 

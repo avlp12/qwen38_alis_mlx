@@ -44,18 +44,17 @@ rows.
 | 0 | **first 4-bit build** | **≈430** | 1.00x | baseline (427.2 canonical, mlx 0.32.0; see row 6 — the baseline itself moved with the compiler) |
 | 1 | fused SDPA for head_dim 256 (mlx core fork, branch `alis`) + the prefill accounting | single-box engine ceiling confirmed at 96-99% | — | adopted |
 | 2 | `prefill_step_size` 8192 | no gain (2048 plateau) | — | refuted |
-| 3 | **two-box layer-pipelined prefill (TB5, bitwise-identical output)** | **733** (1.72x @8K, 1.89x @32K) | **1.72x** then, **1.66x** now | **adopted** (`--prefill-2box`) — the ratio moved because row 6 raised the denominator, not because the pipeline lost anything |
+| 3 | **two-box layer-pipelined prefill (TB5, bitwise-identical output)** | **733** → **755** on 0.32.1 (@8K) | **1.72x**, unchanged | **adopted** (`--prefill-2box`) — see row 7: both arms moved together on the new release, so the speedup held |
 | 4 | served TTFT, 8.3K-token streaming request | 20.3 s → 11.9 s | 1.705x | adopted |
-| 5 | TP2 prefill (same stack as the served decode) | ≈650 (TTFT 12.8 s on 8.3K) | 1.58-1.61x | adopted for interactive serving; the layer pipeline still wins bulk prefill (733) |
+| 5 | TP2 prefill (same stack as the served decode) | ≈650 (TTFT 12.8 s on 8.3K) | 1.58-1.61x | adopted for interactive serving; the layer pipeline still wins bulk prefill (755) |
 | 6 | **mlx 0.32.1, with the head_dim-256 patch retired** | **441.3** one box (was 427.2) | **+3.3%** on the single-box baseline | adopted — measured on two boxes at 3x different load, both showing +2.5-2.6% against the old build in alternated A/B |
+| 7 | **two-box pipeline re-measured on 0.32.1** (the number row 3 left open) | **755.2** @8K (was 733.5); 729.7 @32K (was 712.5) | **+3.0%**, ratio **1.715x** (was 1.717x) | adopted — bitwise verification re-passed on the new release first |
 
 ## The trajectory in one line
 
 Decode: 37.6 → 52.8 single-box (53.1 served; +6.1% more at the operating
 point from the realigned head) → **74.2 on two boxes (2.07x)**. Prefill: ≈430
-→ **733** (1.72x over the 0.32.0-era baseline it was measured against;
-**1.66x** over the current 441.3 one). Every rejection is preserved with its
-diagnosis — the two
+→ **755 (1.72x)**. Every rejection is preserved with its diagnosis — the two
 that matter most for what comes next: dispatch is already hidden in the plain
 loop (so fusion pays only inside the speculative loop), and the speculative
 loop's fixed cost is scheduling, not weight reads. The wider kernel window was

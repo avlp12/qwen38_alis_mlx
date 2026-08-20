@@ -1,0 +1,163 @@
+[21:14:08] ── epsilon 러너 기동(0.32.1, layers 0-32) ──
+기동 요청 전송
+[21:14:14] ✓ 러너 청취 중
+[21:14:14] ── 1단계: bitwise 동치 검증 ──
+[21:14:15] loading model /Users/gesicht/qwen38/q4v ...
+[21:14:15] loaded in 0.6s, wired 464 GiB, mlx 0.32.1
+[21:14:15] connected: {'op': 'hello_ack', 'mlx': '0.32.1', 'lo': 0, 'hi': 32, 'n_layers': 64, 'hidden': 5120, 'pid': 65104, 'model': '/Users/m3ms/qwen38/q4v'}
+[21:14:15] warmup ...
+[21:14:17] verify: N=2049 chunk=1024 split=32
+{
+ "n_total": 2049,
+ "chunk": 1024,
+ "split": 32,
+ "cache_equal": "128/128",
+ "cache_worst_mismatch": [
+  "",
+  0.0
+ ],
+ "logits_maxabs_2box_vs_chunked": 0.0,
+ "logits_bitwise_2box_vs_chunked": true,
+ "logits_maxabs_chunked_vs_singleshot": 0.09375,
+ "greedy_match": true,
+ "greedy_first_mismatch": null,
+ "seq_ref_head": [
+  220,
+  95793,
+  14,
+  96348,
+  220,
+  17,
+  15,
+  16
+ ],
+ "seq_2box_head": [
+  220,
+  95793,
+  14,
+  96348,
+  220,
+  17,
+  15,
+  16
+ ],
+ "t_ref_prefill": 4.542422375000115,
+ "t_2box_pipeline": 3.5316306670001723,
+ "stats": {
+  "n_tokens": 2048,
+  "schedule": [
+   1024,
+   1024
+  ],
+  "stream_kv": false,
+  "t_pipeline": 3.5316306670001723,
+  "t_cache_install": 0.07239004199982446,
+  "server_t_chunks": [
+   1.1998327079927549,
+   1.1452295419876464
+  ],
+  "server_t_compute": 2.347536291985307,
+  "cache_wire_bytes": 144080896,
+  "cache_wire_s": 0.06166004098486155
+ },
+ "strict_pass": true,
+ "pass": true
+}
+[21:14:33] VERIFY PASS (strict bitwise)
+[21:14:33] ✓ 검증 통과
+[21:14:33] ── 2단계: 벤치 (2048/8192/32768, 2벌) ──
+[21:14:34] loading model /Users/gesicht/qwen38/q4v ...
+[21:14:34] loaded in 0.6s, wired 464 GiB, mlx 0.32.1
+[21:14:34] connected: {'op': 'hello_ack', 'mlx': '0.32.1', 'lo': 0, 'hi': 32, 'n_layers': 64, 'hidden': 5120, 'pid': 65104, 'model': '/Users/m3ms/qwen38/q4v'}
+[21:14:34] warmup ...
+[21:14:40] N=2048 1box@512: 4.718s 433.9 tok/s
+[21:14:40] cooldown 15s 
+[21:14:58] N=2048 2box@512: 3.171s 645.6 tok/s (cache 0.110s ttft 3.312s)
+[21:14:58] cooldown 15s 
+[21:15:19] N=2048 1box@1024: 4.642s 441.0 tok/s
+[21:15:19] cooldown 15s 
+[21:15:38] N=2048 2box@1024: 3.716s 550.8 tok/s (cache 0.220s ttft 3.967s)
+[21:15:38] cooldown 15s 
+[21:15:58] N=2048 1box@2048: 4.627s 442.4 tok/s
+[21:15:58] cooldown 15s 
+[21:16:18] N=2048 rep0 1box@2048: 4.637s 441.5
+[21:16:18] cooldown 15s 
+[21:16:37] N=2048 rep0 2box@512: 3.168s 646.1
+[21:16:37] cooldown 15s 
+[21:16:57] N=2048 rep1 1box@2048: 4.641s 441.0
+[21:16:57] cooldown 15s 
+[21:17:16] N=2048 rep1 2box@512: 3.176s 644.5
+[21:17:16] cooldown 15s 
+[21:17:35] N=2048 2box+skv@512: 3.175s (cache 0.060s ttft 3.265s)
+[21:17:35] cooldown 15s before next N
+[21:18:09] N=8192 1box@1024: 18.673s 438.7 tok/s
+[21:18:09] cooldown 40s 
+[21:19:01] N=8192 2box@1024: 10.848s 755.0 tok/s (cache 0.152s ttft 11.034s)
+[21:19:01] cooldown 40s 
+[21:20:00] N=8192 1box@1536: 18.617s 440.0 tok/s
+[21:20:00] cooldown 40s 
+[21:20:52] N=8192 2box@1536: 11.408s 718.0 tok/s (cache 0.226s ttft 11.667s)
+[21:20:52] cooldown 40s 
+[21:21:51] N=8192 1box@2048: 18.608s 440.2 tok/s
+[21:21:51] cooldown 40s 
+[21:22:44] N=8192 2box@2048: 11.977s 683.9 tok/s (cache 0.232s ttft 12.242s)
+[21:22:44] cooldown 40s 
+[21:23:43] N=8192 rep0 1box@2048: 18.607s 440.2
+[21:23:43] cooldown 40s 
+[21:24:35] N=8192 rep0 2box@1024: 10.847s 755.2
+[21:24:35] cooldown 40s 
+[21:25:34] N=8192 rep1 1box@2048: 18.618s 440.0
+[21:25:34] cooldown 40s 
+[21:26:25] N=8192 rep1 2box@1024: 10.858s 754.4
+[21:26:25] cooldown 40s 
+[21:27:17] N=8192 2box+skv@1024: 10.874s (cache 0.068s ttft 10.975s)
+[21:27:17] cooldown 40s before next N
+[21:29:20] N=32768 1box@2048: 82.325s 398.0 tok/s
+[21:29:20] cooldown 75s 
+[21:31:21] N=32768 2box@2048: 44.908s 729.7 tok/s (cache 0.442s ttft 45.395s)
+[21:31:21] cooldown 75s 
+[21:33:59] N=32768 rep0 1box@2048: 82.237s 398.4
+[21:33:59] cooldown 75s 
+[21:36:00] N=32768 rep0 2box@2048: 45.002s 728.1
+[21:36:00] cooldown 75s 
+[21:38:38] N=32768 rep1 1box@2048: 82.255s 398.4
+[21:38:38] cooldown 75s 
+[21:40:39] N=32768 rep1 2box@2048: 44.998s 728.2
+[21:40:39] cooldown 75s 
+[21:42:40] N=32768 2box+skv@2048: 45.329s (cache 0.141s ttft 45.516s)
+[21:42:40] N=2048 summary: {
+ "1box_2048_best_s": 4.62671841700012,
+ "1box_2048_tok_s": 442.4302098175314,
+ "2box_best_s": 3.168394416999945,
+ "2box_best_chunk": 512,
+ "2box_tok_s": 646.0685541600724,
+ "speedup_prefill": 1.4602722414152647,
+ "ttft_1box": 4.656409000999702,
+ "ttft_2box": 3.2997459169996546,
+ "speedup_ttft": 1.4111416812460562
+}
+[21:42:40] N=8192 summary: {
+ "1box_2048_best_s": 18.607044416999997,
+ "1box_2048_tok_s": 440.20962257264443,
+ "2box_best_s": 10.8466831249998,
+ "2box_best_chunk": 1024,
+ "2box_tok_s": 755.1617306051016,
+ "speedup_prefill": 1.7154593899875121,
+ "ttft_1box": 18.6382226249998,
+ "ttft_2box": 11.10758712400002,
+ "speedup_ttft": 1.6779722199728178
+}
+[21:42:40] N=32768 summary: {
+ "1box_2048_best_s": 82.23668887500025,
+ "1box_2048_tok_s": 398.44746241918654,
+ "2box_best_s": 44.90765187499983,
+ "2box_best_chunk": 2048,
+ "2box_tok_s": 729.6529351213184,
+ "speedup_prefill": 1.8312400101413802,
+ "ttft_1box": 82.27163470899995,
+ "ttft_2box": 45.39536458299972,
+ "speedup_ttft": 1.8123355867883078
+}
+[21:42:40] results -> /Users/gesicht/qwen38/exp13_2box321/results_2box.json
+[21:42:40] ✓ 벤치 완료
+[21:42:40] 2BOX321-DONE

@@ -1,4 +1,4 @@
-# Two-box prefill — a layer-pipelined split over Thunderbolt 5, bitwise-exact, 427 to 733 tok/s
+# Two-box prefill — a layer-pipelined split over Thunderbolt 5, bitwise-exact, 440 to 755 tok/s
 
 Single-box prefill on this model closed at 92.7-96.3% of the engine ceiling
 ([kernels.md](kernels.md), `[PA19]`) — the remaining levers summed to under 7%,
@@ -9,12 +9,21 @@ Thunderbolt 5 link: **8192-token prefill 427 → 733.5 tok/s (1.72x), 32K
 `[PA21]`-`[PA22]` in [LEDGER.md](LEDGER.md); raw records in
 `results/bench_2box/`.
 >
-> **Baseline note (2026-08-18):** the single-box figure this ratio divides by has
-> since moved. On mlx 0.32.1 with the head_dim-256 patch retired, one box prefills at
-> **441.3 tok/s** (quiet box; +2.5-2.6% over the old build, reproduced on two machines at
-> 3x different load). Against that baseline the two-box pipeline is **1.66x**, not 1.72x —
-> the denominator grew, the pipeline did not shrink. The 733 figure itself has not been
-> re-measured on 0.32.1.
+> **Re-measured on mlx 0.32.1 (2026-08-20).** An earlier version of this note divided
+> the new single-box baseline (441.3) by the *old* two-box figure and concluded the
+> speedup had fallen to 1.66x. That was wrong: the pipeline moved too. Re-running the
+> canonical harness end to end on 0.32.1 — bitwise verification re-passed first — both
+> arms gain about 3% and the ratio is unchanged.
+>
+> | N | old 1box | old 2box | old ratio | new 1box | new 2box | **new ratio** |
+> |---:|---:|---:|---:|---:|---:|---:|
+> | 2048 | 429.3 | 625.7 | 1.457x | 442.4 | 646.1 | **1.460x** |
+> | 8192 | 427.3 | 733.5 | 1.717x | 440.2 | **755.2** | **1.715x** |
+> | 32768 | 387.6 | 712.5 | 1.838x | 398.4 | 729.7 | **1.831x** |
+>
+> Best chunk per cell, three reps, alternated, cooldowns. The 32K rows are chunk-2048
+> like-for-like; the chunk-1024 bonus point that produced the headline 1.89x is being
+> re-measured separately. Raw: `results/exp13_2box321/`.
 
 ## 1. Feasibility gates, measured before any code
 
