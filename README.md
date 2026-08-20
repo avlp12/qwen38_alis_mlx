@@ -33,7 +33,7 @@ All measured, all reproducible from [results/](results/) and
 | **served** on two boxes: one TP2 stack, on-demand launch | 53.1 (one box served) | **62.9** greedy / **57.7** t1 (+18.5% / +22.4%), with 1.6x prefill in the same stack | `results/serving_full2box/` |
 | decode under shipped sampling (temp 1.0 · top-p 0.95 · top-k 20), gated MTP | 37.2 | **48.1** at 240 tok (1.29x) / **45.1** at 1024 (1.22x) | `results/spec_restate/samp_240.json` / `samp_1024.json` |
 | prefill 8K, one box → two boxes (bitwise-identical output) | 440 tok/s | **755.2** (1.72x) | `results/exp13_2box321/` (0.32.1); older build in `results/bench_2box/` |
-| prefill 32K, one box → two boxes | 398 | **729.7** @2048 (1.83x) | same; the 1.89x headline came from a chunk-1024 bonus run being re-measured |
+| prefill 32K, one box → two boxes | 399 | **751.3** @1024 (1.88x) | `results/exp13_2box321/bonus32k.json` (0.32.1) |
 | served TTFT, 8.3K-token streaming request | 20.3 s | **11.9 s** (1.705x) | `results/bench_2box/serving_verdict.json` |
 | quality, 8-bit vs bf16 (corpus PPL, paired, ≈103K tokens) | — | statistically indistinguishable on en / ko / code | `results/ppl_verdict.json` |
 | quality, 4-bit AWQ vs uniform 4-bit | — | better on all three slices; recovers 48.7% / 26.9% / 14.7% of the gap to 8-bit (en / ko / code) | same |

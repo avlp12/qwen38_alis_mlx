@@ -4,8 +4,8 @@ Single-box prefill on this model closed at 92.7-96.3% of the engine ceiling
 ([kernels.md](kernels.md), `[PA19]`) — the remaining levers summed to under 7%,
 so the next factor had to come from a second machine. This is the design and the
 measured result of splitting prefill across two M3 Ultras over a direct
-Thunderbolt 5 link: **8192-token prefill 427 → 733.5 tok/s (1.72x), 32K
-388 → 733.6 (1.89x), with bitwise-identical outputs.** Ledger: `[I55]`-`[I63]`,
+Thunderbolt 5 link: **8192-token prefill 440 → 755.2 tok/s (1.72x), 32K
+399 → 751.3 (1.88x), with bitwise-identical outputs.** Ledger: `[I55]`-`[I63]`,
 `[PA21]`-`[PA22]` in [LEDGER.md](LEDGER.md); raw records in
 `results/bench_2box/`.
 >
@@ -21,9 +21,10 @@ Thunderbolt 5 link: **8192-token prefill 427 → 733.5 tok/s (1.72x), 32K
 > | 8192 | 427.3 | 733.5 | 1.717x | 440.2 | **755.2** | **1.715x** |
 > | 32768 | 387.6 | 712.5 | 1.838x | 398.4 | 729.7 | **1.831x** |
 >
-> Best chunk per cell, three reps, alternated, cooldowns. The 32K rows are chunk-2048
-> like-for-like; the chunk-1024 bonus point that produced the headline 1.89x is being
-> re-measured separately. Raw: `results/exp13_2box321/`.
+> Best chunk per cell, three reps, alternated, cooldowns. The 32K row above is chunk-2048
+> like-for-like; the chunk-1024 bonus point that produced the headline 1.89x was
+> re-measured too and holds — **399.0 → 751.3, a ratio of 1.882x** (old: 388 → 733.6,
+> 1.891x). Raw: `results/exp13_2box321/`.
 
 ## 1. Feasibility gates, measured before any code
 
