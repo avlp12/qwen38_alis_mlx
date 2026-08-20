@@ -125,11 +125,8 @@ falls off this edge.
 The kernel accumulates into a single `simdgroup_matrix<float, 8, 8>`, which is
 why `M_MAX` is 8. Widths 9-16 need a second tile accumulated alongside the
 first — more registers and more MMA issue, but **the weight reads stay exactly
-what M=8 already pays**, which is the entire point of the design. If that holds,
-M=9-16 should land near the 0.16 ms the window already achieves rather than
-stock's 0.60, and deep-k drafting (k=6, k=8, k=12) becomes economic for the
-first time. That is the next thing to build here, and it is also the answer to
-the coverage question the maintainer asked on mlx#4265.
+what M=8 already pays**. That extension is now built (§5); the weight-read
+prediction held, the throughput conclusion drawn from it did not.
 
 One honesty note on the release comparison: raw `mx.quantized_matmul` measured
 flat across 0.32.0 and 0.32.1 at every M from 1 to 32 (±1-4%, noise). The
@@ -143,7 +140,71 @@ last chunk can emit `num_logits=1` (TTFT −215 ms constant, +4.4% at 2048), and
 depth-1 pipelining of prefill chunks gains **zero** — the compute is already
 saturated — so it shipped as opt-in only, documented as a non-lever.
 
-## 4. Prefill accounting — the ceiling was already ours
+## 5. The wide window: built, measured, and correctly scoped (2026-08-20)
+
+A second accumulator covering rows 8-15, sharing the staged B tile with the
+first, behind `MLXLM_FAST_QMM_WIDE=1`. The M≤8 path is untouched.
+
+| M | stock | wide kernel | gain |
+|---:|---:|---:|---:|
+| 9 | 0.611 ms | **0.231** | **+164%** |
+| 10 | 0.624 | 0.231 | +170% |
+| 12 | 0.366 | 0.232 | +58% |
+| 14 | 0.288 | 0.232 | +24% |
+| 16 | 0.288 | 0.232 | +24% |
+
+Correctness came with a lesson worth more than the kernel. Compared directly
+against stock, M=9-11 differ by 6.2e-3 and it reads as a failure. Against a
+shared fp32 reference the wide kernel is 3.13e-3 and stock is 3.48e-3 — ours is
+marginally the more accurate of the two. The 6.2e-3 was the distance between two
+roundings, not an error. An oracle's two arms have to be comparable.
+
+**The cliff is real but it was not the binding constraint.** Deep-k was
+re-adjudicated with the wide kernel on, k=4/6/8, two alternated rotations:
+
+| k | verify width | wide off | wide on |
+|---:|---:|---:|---:|
+| 4 (operating point) | 5 | **53.26** | 51.99 |
+| 6 | 7 | 48.42 | 48.98 |
+| 8 | 9 | 47.13 | 49.11 |
+
+k=8 loses to k=4 by 7.8% even on the most generous reading, so §3's rejection
+stands. The control arms say why the generous reading is not available: k=4 and
+k=6 verify at widths 5 and 7, which the wide kernel *cannot structurally
+touch*, and they still moved −2.2% and +1.2%. This harness's per-cell noise is
+±5-8%; k=8's "+4.1%" is not claimable. Null arms earn their seat.
+
+A call histogram (`MLXLM_QMM_HIST=1`) explains the outcome. At k=8 the gate
+truncates most drafts, so **M=9 is only 8.9% of calls** while **M=1 is 43.5%** —
+the k serial drafter forwards, each a single row. Weighted by time, M=9 is 27.8%
+of quantized-matmul time and the wide kernel removes 18% of it, which is real
+and still invisible end to end, because the constraint is drafter latency, not
+GEMM.
+
+**And the window is not flat past 8.** M≤8 is free from 6 to 8 because it pads
+into one tile; M>8 lights a genuine second tile at about 1.8x (0.127 → 0.232 ms).
+The extension converts a 3.8x cliff into a 1.8x step. Relaxing DSpark's
+`max_width` proves it on the model:
+
+| arm | observed width | chat | code | math | ko | acceptance (chat/code) |
+|---|---:|---:|---:|---:|---:|---|
+| **8 (default)** | 8.0 | **36.41** | **49.25** | **48.66** | **33.69** | 0.765 / 1.390 |
+| 12 | 12.0 | 28.78 | 37.92 | 37.27 | 25.35 | 1.051 / 1.656 |
+| 16 | 16.0 | 26.16 | 40.51 | 36.15 | 25.86 | 0.805 / 1.791 |
+| unbounded | 30.9 | 11.96 | 18.79 | 18.00 | 10.77 | 0.890 / 2.038 |
+
+The default wins on all four prompts. Note the direction of the two columns:
+**acceptance is highest exactly where throughput is lowest.** Acceptance is not
+the objective — it only means something multiplied by the width-cost curve, and
+while that curve has a step at M=8 the optimum sits in front of the step.
+`max_width = 8` stays.
+
+So the kernel ships opt-in, and the scope is the finding: **wherever the width is
+ours to choose — speculative depth, block size — M≤8 wins.** The wide window is
+for widths that are forced on us: batched serving with concurrent requests, and
+the coverage question the maintainer asked on mlx#4265.
+
+## 6. Prefill accounting — the ceiling was already ours
 
 A stage-level account of a T=2048 single-chunk prefill closes with residual
 <= 0.05% `[I49]`: GDN layers 74.8%, attention layers 25.2%, everything else
