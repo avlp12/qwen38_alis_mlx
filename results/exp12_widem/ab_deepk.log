@@ -1,0 +1,61 @@
+[20:52:58] ── 회전 1 OFF(현행 창 M<=8) ──
+[deepk] mlx=0.32.0.dev20260816+7a1d4f5 wide=False fork=/Users/m3ms/mlx-lm-fork/mlx_lm
+  k=4 chat :  49.71 tok/s n=240
+  k=4 code :  57.41 tok/s n=240
+  k=4 math :  59.45 tok/s n=240
+  k=4 ko   :  46.39 tok/s n=240
+  k=6 chat :  44.76 tok/s n=240
+  k=6 code :  48.08 tok/s n=240
+  k=6 math :  52.13 tok/s n=240
+  k=6 ko   :  46.93 tok/s n=240
+  k=8 chat :  44.52 tok/s n=240
+  k=8 code :  46.74 tok/s n=240
+  k=8 math :  49.48 tok/s n=240
+  k=8 ko   :  48.24 tok/s n=240
+DEEPK-DONE
+[20:56:26] ── 회전 1 ON(넓은 창 M<=16) ──
+[deepk] mlx=0.32.0.dev20260816+7a1d4f5 wide=True fork=/Users/m3ms/mlx-lm-fork/mlx_lm
+  k=4 chat :  49.62 tok/s n=240
+  k=4 code :  55.45 tok/s n=240
+  k=4 math :  59.56 tok/s n=240
+  k=4 ko   :  46.47 tok/s n=240
+  k=6 chat :  49.03 tok/s n=240
+  k=6 code :  48.14 tok/s n=240
+  k=6 math :  52.13 tok/s n=240
+  k=6 ko   :  46.94 tok/s n=240
+  k=8 chat :  43.08 tok/s n=240
+  k=8 code :  50.17 tok/s n=240
+  k=8 math :  56.17 tok/s n=240
+  k=8 ko   :  45.69 tok/s n=240
+DEEPK-DONE
+[20:59:54] ── 회전 2 OFF(현행 창 M<=8) ──
+[deepk] mlx=0.32.0.dev20260816+7a1d4f5 wide=False fork=/Users/m3ms/mlx-lm-fork/mlx_lm
+  k=4 chat :  49.79 tok/s n=240
+  k=4 code :  57.45 tok/s n=240
+  k=4 math :  59.53 tok/s n=240
+  k=4 ko   :  46.31 tok/s n=240
+  k=6 chat :  48.83 tok/s n=240
+  k=6 code :  47.90 tok/s n=240
+  k=6 math :  51.96 tok/s n=240
+  k=6 ko   :  46.74 tok/s n=240
+  k=8 chat :  44.39 tok/s n=240
+  k=8 code :  46.36 tok/s n=240
+  k=8 math :  49.26 tok/s n=240
+  k=8 ko   :  48.05 tok/s n=240
+DEEPK-DONE
+[21:03:22] ── 회전 2 ON(넓은 창 M<=16) ──
+[deepk] mlx=0.32.0.dev20260816+7a1d4f5 wide=True fork=/Users/m3ms/mlx-lm-fork/mlx_lm
+  k=4 chat :  49.56 tok/s n=240
+  k=4 code :  49.80 tok/s n=240
+  k=4 math :  59.27 tok/s n=240
+  k=4 ko   :  46.24 tok/s n=240
+  k=6 chat :  48.77 tok/s n=240
+  k=6 code :  47.90 tok/s n=240
+  k=6 math :  52.02 tok/s n=240
+  k=6 ko   :  46.90 tok/s n=240
+  k=8 chat :  45.74 tok/s n=240
+  k=8 code :  50.18 tok/s n=240
+  k=8 math :  56.13 tok/s n=240
+  k=8 ko   :  45.69 tok/s n=240
+DEEPK-DONE
+[21:06:50] AB-DEEPK-DONE
