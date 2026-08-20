@@ -102,6 +102,42 @@ The hoped-for +25-32% on the attention lane was **rejected by measurement** —
 attention is only a quarter of prefill (next section), and the unfused fallback
 was less bad than assumed. Kept because it is small, correct, and free.
 
+## 4. What the window is worth, and what sits just outside it (2026-08-18)
+
+Measured on mlx 0.32.1 through `nn.QuantizedLinear` on a dependent chain, the
+model's FFN shape (K=5120, N=17408, 4-bit g64):
+
+| M | stock | with the kernel | gain |
+|---:|---:|---:|---:|
+| 6 | 0.360 ms | **0.162** | **+123%** |
+| 7 | 0.473 | **0.162** | **+193%** |
+| 8 | 0.454 | **0.159** | **+186%** |
+| 9 | 0.604 | 0.608 | 0% — outside the window |
+| 10 | 0.616 | 0.613 | +0.5% |
+
+Two things follow. The kernel is worth far more inside its window than the
+end-to-end numbers suggest — 2.2 to 2.9x on the GEMM itself, diluted by
+everything else a decode step does. And **the step from M=8 to M=9 costs 3.8x**
+(0.159 ms to 0.604 ms), which is the real size of the cliff that rejected gate
+k=8 in §3. That rejection was never about draft economics; verify width 9 simply
+falls off this edge.
+
+The kernel accumulates into a single `simdgroup_matrix<float, 8, 8>`, which is
+why `M_MAX` is 8. Widths 9-16 need a second tile accumulated alongside the
+first — more registers and more MMA issue, but **the weight reads stay exactly
+what M=8 already pays**, which is the entire point of the design. If that holds,
+M=9-16 should land near the 0.16 ms the window already achieves rather than
+stock's 0.60, and deep-k drafting (k=6, k=8, k=12) becomes economic for the
+first time. That is the next thing to build here, and it is also the answer to
+the coverage question the maintainer asked on mlx#4265.
+
+One honesty note on the release comparison: raw `mx.quantized_matmul` measured
+flat across 0.32.0 and 0.32.1 at every M from 1 to 32 (±1-4%, noise). The
+end-to-end decode gains that release brought (gated MTP +2.4%, DSpark +5.7%,
+plain unchanged) are real and reproduced, but they do **not** come from the
+quantized GEMM path, and the mechanism is recorded as unidentified rather than
+guessed at.
+
 Two adjacent prefill findings from the same pass `[I53]`: the DSpark prefill's
 last chunk can emit `num_logits=1` (TTFT −215 ms constant, +4.4% at 2048), and
 depth-1 pipelining of prefill chunks gains **zero** — the compute is already
