@@ -1,0 +1,31 @@
+{
+ "target": "/Users/m3ms/qwen38/q4graded_f",
+ "ref": "/Users/m3ms/qwen38/src",
+ "ctx": 2048,
+ "block": 512,
+ "slices": {
+  "en": {
+   "n_tokens": 34816,
+   "mean_kl": 0.0374755784869194,
+   "kl_block_sem": 0.0013580565833690417,
+   "median_kl": 0.011447260156273842,
+   "top1_agree_pct": 91.67911305147058
+  },
+  "ko": {
+   "n_tokens": 34816,
+   "mean_kl": 0.038797974586486816,
+   "kl_block_sem": 0.0009396315581482928,
+   "median_kl": 0.01316735427826643,
+   "top1_agree_pct": 90.92658547794117
+  },
+  "code": {
+   "n_tokens": 30720,
+   "mean_kl": 0.14258761703968048,
+   "kl_block_sem": 0.008115463907136192,
+   "median_kl": 0.0002394351176917553,
+   "top1_agree_pct": 91.26953125
+  }
+ },
+ "mean_kl_overall": 0.07011152362945128,
+ "top1_overall": 91.29264987244898
+}

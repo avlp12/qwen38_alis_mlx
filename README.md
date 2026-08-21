@@ -98,6 +98,9 @@ docs/
                            (kernel, then EOS protocol), and the operating point that survived
   two-box.md               TB5 layer-pipelined prefill: bubble law, bitwise proof,
                            440 -> 755 tok/s, server integration
+  bit-allocation.md        reading a competitor's quant from its public artifacts (imatrix +
+                           GGUF headers over HTTP range), which half transferred (five tensors
+                           promoted = -16% KL) and which half lost (fixed-size redistribution)
   kl-tiers.md              the tier chart: exact KL vs size for 10 builds (ours + community),
                            the byte-identity cross-check, and per-Mac tier guidance
   ane-hybrid.md            the Neural Engine measured: a +26% prefill at 99.95% top-1,

@@ -1,0 +1,47 @@
+[q4awq3m] 전역 {'group_size': 64, 'bits': 4} · 비양자화 281 · per-tensor 오버라이드 506
+    language_model.lm_head                       bits=4 gs=64 x1
+    language_model.model.embed_tokens            bits=4 gs=64 x1
+    language_model.mtp.fc                        bits=4 gs=64 x1
+    linear_attn.in_proj_a                        bits=4 gs=64 x48
+    linear_attn.in_proj_b                        bits=4 gs=64 x48
+    linear_attn.in_proj_qkv                      bits=4 gs=64 x48
+    linear_attn.in_proj_z                        bits=4 gs=64 x48
+    linear_attn.out_proj                         bits=4 gs=64 x48
+    mlp.down_proj                                bits=4 gs=64 x65
+    mlp.gate_proj                                bits=4 gs=64 x65
+    mlp.up_proj                                  bits=4 gs=64 x65
+    self_attn.k_proj                             bits=4 gs=64 x17
+    self_attn.o_proj                             bits=4 gs=64 x17
+    self_attn.q_proj                             bits=4 gs=64 x17
+    self_attn.v_proj                             bits=4 gs=64 x17
+[q4v] 전역 {'group_size': 64, 'bits': 4, 'mode': 'affine'} · 비양자화 0 · per-tensor 오버라이드 0
+[q6awq3] 전역 {'group_size': 64, 'bits': 4} · 비양자화 289 · per-tensor 오버라이드 498
+    language_model.lm_head                       bits=6 gs=64 x1
+    language_model.model.embed_tokens            bits=6 gs=64 x1
+    linear_attn.in_proj_a                        bits=6 gs=64 x48
+    linear_attn.in_proj_b                        bits=6 gs=64 x48
+    linear_attn.in_proj_qkv                      bits=6 gs=64 x48
+    linear_attn.in_proj_z                        bits=6 gs=64 x48
+    linear_attn.out_proj                         bits=6 gs=64 x48
+    mlp.down_proj                                bits=6 gs=64 x64
+    mlp.gate_proj                                bits=6 gs=64 x64
+    mlp.up_proj                                  bits=6 gs=64 x64
+    self_attn.k_proj                             bits=6 gs=64 x16
+    self_attn.o_proj                             bits=6 gs=64 x16
+    self_attn.q_proj                             bits=6 gs=64 x16
+    self_attn.v_proj                             bits=6 gs=64 x16
+[q8awq3] 전역 {'group_size': 64, 'bits': 4} · 비양자화 289 · per-tensor 오버라이드 498
+    language_model.lm_head                       bits=8 gs=64 x1
+    language_model.model.embed_tokens            bits=8 gs=64 x1
+    linear_attn.in_proj_a                        bits=8 gs=64 x48
+    linear_attn.in_proj_b                        bits=8 gs=64 x48
+    linear_attn.in_proj_qkv                      bits=8 gs=64 x48
+    linear_attn.in_proj_z                        bits=8 gs=64 x48
+    linear_attn.out_proj                         bits=8 gs=64 x48
+    mlp.down_proj                                bits=8 gs=64 x64
+    mlp.gate_proj                                bits=8 gs=64 x64
+    mlp.up_proj                                  bits=8 gs=64 x64
+    self_attn.k_proj                             bits=8 gs=64 x16
+    self_attn.o_proj                             bits=8 gs=64 x16
+    self_attn.q_proj                             bits=8 gs=64 x16
+    self_attn.v_proj                             bits=8 gs=64 x16
