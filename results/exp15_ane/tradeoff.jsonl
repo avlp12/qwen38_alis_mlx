@@ -1,0 +1,8 @@
+{"F": 0.05, "max_layers": 64, "attached": 64, "ane_ops": 189.0, "gpu_tps": 836.9, "hyb_tps": 860.1, "gain_pct": 2.8, "kl_nats": 13.37419, "top1_same": false}
+{"F": 0.1, "max_layers": 64, "attached": 64, "ane_ops": 189.0, "gpu_tps": 837.0, "hyb_tps": 876.6, "gain_pct": 4.7, "kl_nats": 8.3931, "top1_same": false}
+{"F": 0.2, "max_layers": 64, "attached": 64, "ane_ops": 189.0, "gpu_tps": 837.4, "hyb_tps": 914.0, "gain_pct": 9.1, "kl_nats": 4.14186, "top1_same": false}
+{"F": 0.3, "max_layers": 64, "attached": 64, "ane_ops": 189.0, "gpu_tps": 837.2, "hyb_tps": 950.2, "gain_pct": 13.5, "kl_nats": 12.34532, "top1_same": false}
+{"F": 0.45, "max_layers": 64, "attached": 64, "ane_ops": 189.0, "gpu_tps": 836.9, "hyb_tps": 1000.9, "gain_pct": 19.6, "kl_nats": 9.75664, "top1_same": false}
+{"F": 0.45, "max_layers": 8, "attached": 8, "ane_ops": 21.0, "gpu_tps": 837.2, "hyb_tps": 852.9, "gain_pct": 1.9, "kl_nats": 0.00441, "top1_same": true}
+{"F": 0.45, "max_layers": 16, "attached": 16, "ane_ops": 45.0, "gpu_tps": 829.3, "hyb_tps": 806.8, "gain_pct": -2.7, "kl_nats": 3.4811, "top1_same": false}
+{"F": 0.45, "max_layers": 32, "attached": 32, "ane_ops": 93.0, "gpu_tps": 767.4, "hyb_tps": 842.7, "gain_pct": 9.8, "kl_nats": 3.9095, "top1_same": false}

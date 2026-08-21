@@ -1,0 +1,39 @@
+{
+ "cfg": {
+  "F": 0.45,
+  "GDN": true,
+  "G": 0.3,
+  "tile": 2048
+ },
+ "attached": 64,
+ "cells": {
+  "Explain how rainbows form, c": {
+   "kl_nats": 0.0,
+   "top1_same": true,
+   "greedy_agree_prefix": 48,
+   "n_gen": 48,
+   "maxabs_logit": 0.0
+  },
+  "Write a Python class impleme": {
+   "kl_nats": 0.0,
+   "top1_same": true,
+   "greedy_agree_prefix": 48,
+   "n_gen": 48,
+   "maxabs_logit": 0.0
+  },
+  "Prove that the square root o": {
+   "kl_nats": 0.0,
+   "top1_same": true,
+   "greedy_agree_prefix": 48,
+   "n_gen": 48,
+   "maxabs_logit": 0.0
+  },
+  "한국 전통 건축 양식과 현대 건축의 조화에 대해 자": {
+   "kl_nats": 0.0,
+   "top1_same": true,
+   "greedy_agree_prefix": 48,
+   "n_gen": 48,
+   "maxabs_logit": 0.0
+  }
+ }
+}

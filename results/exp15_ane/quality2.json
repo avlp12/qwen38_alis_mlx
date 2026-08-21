@@ -1,0 +1,38 @@
+{
+ "F": 0.45,
+ "attached": 64,
+ "cells": {
+  "영문 2048": {
+   "kl_nats": 5.16826344,
+   "top1_same": false,
+   "greedy_agree": 0,
+   "n_gen": 64,
+   "maxabs_logit": 21.31836,
+   "engaged": true
+  },
+  "영문 4096": {
+   "kl_nats": 5.00608873,
+   "top1_same": false,
+   "greedy_agree": 0,
+   "n_gen": 64,
+   "maxabs_logit": 18.00781,
+   "engaged": true
+  },
+  "한국어 2048": {
+   "kl_nats": 7.52688408,
+   "top1_same": false,
+   "greedy_agree": 0,
+   "n_gen": 64,
+   "maxabs_logit": 23.46094,
+   "engaged": true
+  },
+  "코드 2048": {
+   "kl_nats": 9.74435425,
+   "top1_same": false,
+   "greedy_agree": 0,
+   "n_gen": 64,
+   "maxabs_logit": 19.28125,
+   "engaged": true
+  }
+ }
+}
