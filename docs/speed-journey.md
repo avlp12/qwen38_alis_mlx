@@ -49,12 +49,17 @@ rows.
 | 5 | TP2 prefill (same stack as the served decode) | ≈650 (TTFT 12.8 s on 8.3K) | 1.58-1.61x | adopted for interactive serving; the layer pipeline still wins bulk prefill (755) |
 | 6 | **mlx 0.32.1, with the head_dim-256 patch retired** | **441.3** one box (was 427.2) | **+3.3%** on the single-box baseline | adopted — measured on two boxes at 3x different load, both showing +2.5-2.6% against the old build in alternated A/B |
 | 7 | **two-box pipeline re-measured on 0.32.1** (the number row 3 left open) | **755.2** @8K (was 733.5); 729.7 @32K (was 712.5) | **+3.0%**, ratio **1.715x** (was 1.717x) | adopted — bitwise verification re-passed on the new release first |
+| 8 | ANE/CPU hybrid prefill (oMLX 0.6.x), **first verdict** | mean KL 9.8-10.2, top-1 1.6% | — | **retracted** — the harness skipped the engine's load-time warm-up of 224 ANE programs, so every program's first execution returned garbage; published as a quality collapse, and wrong |
+| 9 | ANE/CPU hybrid prefill, driven through the vendor's entry sequence, their default split | **520.7** @2K, 531.8 @8K one box | **+19.6%** @8K | adopted — mean KL 0.000264, top-1 100.0% |
+| 10 | **hybrid re-tuned** (`mlp .30 / gdn .375 / cpu .14 / gate .13 / down .10`) + `apply_qwen35_q4_mlp_patch` at load | **571.8** one box | **+26.0%** | **adopted** — top-1 99.95%; the loader patch alone is 9 of the 26 points, and only at chunk 2048 |
+| 11 | **hybrid composed with the two-box pipeline** | **863.5** @32K (control 780.4); 748.2 @8K (control 778.2) | **+10.6%** @32K, **-3.9%** @8K | **adopted with a branch** — the levers compete rather than multiply: ANE removes compute, so link transfer dominates and the pipeline ratio falls 1.90 → 1.80 |
 
 ## The trajectory in one line
 
 Decode: 37.6 → 52.8 single-box (53.1 served; +6.1% more at the operating
 point from the realigned head) → **74.2 on two boxes (2.07x)**. Prefill: ≈430
-→ **755 (1.72x)**. Every rejection is preserved with its diagnosis — the two
+→ 755 (1.72x) → **863.5 at 32K with the ANE hybrid composed in (2.01x)**, and
+571.8 on a single box. Every rejection is preserved with its diagnosis — the two
 that matter most for what comes next: dispatch is already hidden in the plain
 loop (so fusion pays only inside the speculative loop), and the speculative
 loop's fixed cost is scheduling, not weight reads. The wider kernel window was

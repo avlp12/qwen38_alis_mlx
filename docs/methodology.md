@@ -128,6 +128,27 @@ my own defects in a costume; itemized, the step budget closed at 49.9 ms
 predicted vs 49.0 measured. Require the budget to close before publishing any
 verdict that rests on a residual.
 
+## Composing two optimizations
+
+**Never multiply two separately measured gains.** Our ANE offload was worth
++17.1% on one box and our two-box pipeline 1.90x; the composition delivered
++10.6%, and at a shorter prompt **-3.9%**. Both parts were measured correctly.
+The product was still fiction, because the levers attack different bottlenecks
+(compute and link transfer) and relieving one promotes the other — the pipeline
+ratio itself fell to 1.80. Measure the composition, with a control arm for the
+second lever **inside the same run**.
+
+**Expect a crossover and find the parameter that moves it.** A composition that
+is positive at one operating point and negative at another is the normal case,
+not a measurement failure. Ours moved with prompt length through chunk count.
+Publish the branch, not the favourable half.
+
+**When a vendor's number beats yours on an identical configuration, look
+upstream of the feature.** Nine of our twenty-six ANE points came from a loader
+call that runs before the weights are read, invisible to every accelerator
+counter. Re-tuning the feature would never have found it — reproducing their
+*sequence* did.
+
 ## The meta-rule
 
 Most of these rules exist because a number was *right* under one protocol and

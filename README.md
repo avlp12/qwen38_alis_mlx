@@ -100,9 +100,11 @@ docs/
                            440 -> 755 tok/s, server integration
   kl-tiers.md              the tier chart: exact KL vs size for 10 builds (ours + community),
                            the byte-identity cross-check, and per-Mac tier guidance
-  ane-hybrid.md            the Neural Engine measured: why decode was closed by arithmetic,
-                           a +23% prefill that costs the model, INT8's theoretical floor,
-                           and the five silent no-ops on the way
+  ane-hybrid.md            the Neural Engine measured: a +26% prefill at 99.95% top-1,
+                           why decode was closed by arithmetic, the retracted verdict
+                           and the load-time warm-up that caused it, the loader call
+                           worth 9 of the 26 points, and why it does not multiply
+                           with the two-box pipeline (863.5 tok/s at 32K, -3.9% at 8K)
   speed-journey.md         every prefill/decode attempt in one table - baselines,
                            adoptions, opt-ins, and the six rejections with diagnoses
   methodology.md           every measurement rule, each with the incident that bought it

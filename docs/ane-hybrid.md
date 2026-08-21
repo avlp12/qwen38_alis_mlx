@@ -1,4 +1,4 @@
-# The Neural Engine, measured: a +19% prefill that costs nothing, and the four days it took me to believe it
+# The Neural Engine, measured: a +26% prefill that costs nothing, and the four days it took me to believe it
 
 oMLX 0.6.x ships an opt-in prefill that splits each MLP across the GPU, the
 Apple Neural Engine and the CPU. Its benchmarks are on *this* model and *this*
@@ -29,8 +29,85 @@ mean KL 0.000264 · p99 0.002999 · top-1 agreement 100.0%
 ```
 
 For scale, the KL gap between our own quantization tiers is 0.02-0.2 nats. This
-is two orders of magnitude below that: effectively lossless. And it is untuned —
-the split above is their default, not a value we searched for.
+is two orders of magnitude below that: effectively lossless.
+
+## Tuned: +26%, and a loader step that is worth 9 points of it
+
+The table above is their default split. Re-tuning each fraction on the correct
+path — one factor at a time, four rotations per point, alternating arms inside a
+single process — moves the operating point to:
+
+```
+mlp_fraction 0.30 · gdn_fraction 0.375
+cpu_fraction 0.14 · cpu_gate_fraction 0.13 · cpu_down_fraction 0.10
+```
+
+which gives **571.8 tok/s, +25.97%** over the same-process GPU-only arm, at
+**99.95% top-1 agreement**. Two things are worth extracting from the sweep:
+
+- `gdn_fraction` has a **cliff at its lower bound**, not a slope. The engine
+  gates the GDN path on `ane_outputs < z_outputs`; below 0.375 that test fails
+  and GDN silently falls back to GPU. A sweep that stops at the cliff reads the
+  cliff as a plateau.
+- `cpu_down_fraction` looked flat at first and I called it useless. It is not —
+  it is worth +0.7%, which sits outside the 0.4% spread of a four-rotation
+  measurement but inside the 4% spread of a single one. The lesson is the
+  ordinary one: a factor is not flat until the noise floor is below its effect.
+
+The larger surprise is a **loader step, not a tuning knob**. If
+`apply_qwen35_q4_mlp_patch()` is not applied *before* the weights load, the same
+ANE configuration yields +15.5% instead of +24.9%. Nine points of the result live
+in a call that has nothing to do with the Neural Engine and everything to do with
+how the MLP is laid out before it is handed over. Its effect also only appears at
+chunk 2048 — at chunk 1024 it is exactly nothing (466.2 → 462.1). That detail
+matters in the next section. Isolated in the two-box run, patched against
+unpatched at a 32K prompt:
+
+| | chunk 1024, 1box / 2box | chunk 2048, 1box / 2box |
+|---|---:|---:|
+| without the patch | 466.2 / 779.6 | 452.6 / 819.6 |
+| with the patch | 462.1 / 777.3 | **480.8 / 863.5** |
+
+At chunk 1024 it does precisely nothing. At chunk 2048 it is worth +6.2% on one
+box and +5.4% on two.
+
+## Composing with the two-box pipeline: a competition, not a product
+
+We already had a second lever: a layer-pipelined prefill across two M3 Ultras
+over Thunderbolt. The natural assumption is that the two compose — speed up each
+box by 26%, keep the 1.9x pipeline ratio, collect 1.9 x 1.26. That assumption is
+wrong, and it is wrong in a way worth stating generally.
+
+Measured with both boxes patched and an ANE-off control **inside the same run**:
+
+| configuration | 8K 1box / 2box | 32K 1box / 2box | ratio @32K |
+|---|---:|---:|---:|
+| ANE seq=1024, chunk 1024 | 462.1 / 743.1 | 419.7 / 777.3 | 1.85x |
+| **ANE seq=2048, chunk 2048** | 507.8 / 748.2 | **480.8 / 863.5** | 1.80x |
+| control, ANE off, chunk 1024 | 455.3 / 778.2 | 410.6 / 780.4 | 1.90x |
+
+Against the same-run control, the two-box arm is **+10.6% at 32K** and **-3.9% at
+8K**.
+
+ANE improves the single box everywhere (+17.1% at 32K, +11.5% at 8K), yet the
+two-box ratio *falls* (1.90 → 1.80, and 1.71 → 1.47 at 8K). The pipeline ratio is
+set by the balance between compute and link transfer; ANE removes compute only,
+so transfer becomes a larger share and the ratio erodes. **The two levers do not
+multiply — they compete for the same headroom.** Whether the composition is
+net-positive is then a race between what ANE earns on one box and what the ratio
+loses, and the number of chunks decides it: 32K has sixteen chunks and amortises
+the chunk-2048 bubble, 8K has four and does not.
+
+The general form: when two levers attack different bottlenecks, relieving one
+promotes the other, and the second lever's *relative* gain shrinks. Composition
+must be measured against a control in the same run. Multiplying two separately
+measured gains would have predicted roughly +17% at 32K; the truth is +10.6%, and
+at 8K it is negative.
+
+Operationally we branch on prompt length: **two boxes and N>=32K gets ANE
+seq=2048 / chunk 2048 (863.5 tok/s, +17.8% over our previous best of 733); below
+that, ANE off with chunk 1024 (778.2). One box always runs ANE seq=2048** — there
+is no length at which turning it off helps a single box.
 
 ## Decode: closed by arithmetic, not benchmarking
 
