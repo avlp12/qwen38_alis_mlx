@@ -1,9 +1,3 @@
-# --- Snapshot for reading and citation - not the runnable source. -------------
-# Origin: the avlp12/mlx-lm fork (github.com/avlp12/mlx-lm), campaign working
-# tree of 2026-08-16 (fork base f6c30eb over upstream ml-explore/mlx-lm 254d153).
-# Original path in the fork: mlx_lm/prefill_2box/serving.py
-# Run it from the fork; this copy exists so the campaign repo is self-contained.
-# -------------------------------------------------------------------------------
 # Copyright © 2026 Apple Inc.
 """Serving glue for two-box prefill: incremental (prompt-cache aware) prefill
 for ``mlx_lm.server --prefill-2box HOST:PORT``.
@@ -21,6 +15,11 @@ Differences from the benchmark orchestrator (``TwoBoxPrefill.prefill``):
     ``send_from``).
   * Connection management: fail-fast probe at server startup, lazy reconnect
     per request afterwards.
+  * The chunk schedule is chosen per request from the length of the un-cached
+    suffix (``chunk_for``).  A wider chunk amortises fixed per-chunk cost and
+    is what an accelerator offload needs to engage at all, but it deepens the
+    pipeline bubble; which one wins depends on how many chunks the prompt has.
+    See ``--prefill-2box-chunk-long`` / ``--prefill-2box-long-tokens``.
 
 Single-turn requests (no reusable prefix) reduce exactly to the verified
 benchmark path: same chunk schedule, same slice code, bitwise-identical.
@@ -85,13 +84,32 @@ def probe_runner(host, port, timeout=5):
 class ServingPrefill:
     """Persistent two-box prefill engine for one loaded server model."""
 
-    def __init__(self, model, host, port, split=32, chunk=1024, min_tokens=4096):
+    def __init__(
+        self,
+        model,
+        host,
+        port,
+        split=32,
+        chunk=1024,
+        min_tokens=4096,
+        chunk_long=None,
+        long_tokens=11264,
+    ):
         self.model = model
         self.host = host
         self.port = port
         self.split = split
         self.chunk = chunk
         self.min_tokens = min_tokens
+        # Optional second chunk schedule for long prompts.  ``chunk_long`` is
+        # what turns the branch on; ``long_tokens`` defaults to the measured
+        # crossover (see ``chunk_for``).  Asking for the branch without a
+        # threshold is a configuration error rather than a silent
+        # single-schedule fallback.
+        if chunk_long is not None and long_tokens is None:
+            raise TwoBoxError("chunk_long needs a long_tokens threshold")
+        self.chunk_long = chunk_long
+        self.long_tokens = long_tokens
         self._tb = None
         self.ensure()  # fail fast at load time
 
@@ -135,6 +153,27 @@ class ServingPrefill:
         """Use two-box only when the un-cached suffix is long enough to win."""
         return n_new_tokens - 1 >= self.min_tokens
 
+    def chunk_for(self, n_new_tokens):
+        """Chunk schedule for a prefill of ``n_new_tokens`` new tokens.
+
+        The branch exists because the two schedules are not ordered: the wider
+        one is faster only once the prompt carries enough chunks to amortise
+        the deeper pipeline bubble.  Below ``long_tokens`` the narrow schedule
+        wins outright, so the choice is made per request rather than fixed at
+        startup.
+
+        The 11264 default is the measured crossover for 1024 -> 2048 on a 27B
+        hybrid-attention model split across two M3 Ultras with an ANE/CPU
+        offload attached (2048/1024 throughput ratio 0.95 at 8K, 1.00 at 9-10K,
+        1.03 at 11K, 1.11 at 32K).  It is a property of *that* pairing, not a
+        universal one: with the offload off the wide schedule never won
+        anywhere in 8K-32K, which is why ``chunk_long`` stays opt-in.  Re-measure
+        before trusting the default on a different model, split or accelerator.
+        """
+        if self.chunk_long is not None and n_new_tokens >= self.long_tokens:
+            return self.chunk_long
+        return self.chunk
+
     # --------------------------------------------------------------- prefill
     def prefill_into(self, full_cache, tokens, start, progress=None):
         """Advance ``full_cache`` in place from offset ``start`` to len(tokens).
@@ -155,6 +194,7 @@ class ServingPrefill:
         need = P - start
         if need < 1:
             raise TwoBoxError(f"nothing to prefill (P={P}, start={start})")
+        chunk = self.chunk_for(need)
         n_layers = tb.n_layers
         if len(full_cache) != n_layers:
             raise TwoBoxError(
@@ -171,7 +211,9 @@ class ServingPrefill:
                 )
 
         try:
-            return self._prefill_into(tb, full_cache, tokens, P, start, progress)
+            return self._prefill_into(
+                tb, full_cache, tokens, P, start, chunk, progress
+            )
         except Exception:
             # Connection state is unknown mid-protocol: drop and reconnect on
             # the next request.  The supplied cache may be partially advanced
@@ -181,7 +223,7 @@ class ServingPrefill:
         finally:
             local.cache = []
 
-    def _prefill_into(self, tb, full_cache, tokens, P, start, progress):
+    def _prefill_into(self, tb, full_cache, tokens, P, start, chunk, progress):
         local = tb.local
         sock = tb.sock
 
@@ -218,7 +260,7 @@ class ServingPrefill:
             {
                 "op": "prefill2",
                 "tokens": tokens,
-                "chunk": self.chunk,
+                "chunk": chunk,
                 "send_from": start,
             },
         )
@@ -296,6 +338,7 @@ class ServingPrefill:
         return {
             "n_tokens": P,
             "start": start,
+            "chunk": chunk,
             "resumed_at": srv.get("e0"),
             "t_pipeline": t_pipeline,
             "t_cache_install": t_cache,

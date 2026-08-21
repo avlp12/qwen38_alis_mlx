@@ -103,8 +103,10 @@ docs/
   ane-hybrid.md            the Neural Engine measured: a +26% prefill at 99.95% top-1,
                            why decode was closed by arithmetic, the retracted verdict
                            and the load-time warm-up that caused it, the loader call
-                           worth 9 of the 26 points, and why it does not multiply
-                           with the two-box pipeline (863.5 tok/s at 32K, -3.9% at 8K)
+                           worth 9 of the 26 points, why it does not multiply
+                           with the two-box pipeline (863.5 tok/s at 32K, -3.9%
+                           at 8K), and the measured crossover that sets the
+                           serving branch at 11264 tokens
   speed-journey.md         every prefill/decode attempt in one table - baselines,
                            adoptions, opt-ins, and the six rejections with diagnoses
   methodology.md           every measurement rule, each with the incident that bought it
@@ -114,7 +116,11 @@ code/
   models/dspark.py         MLX port of the DSpark block-diffusion drafter
   dspark_generate.py       the speculative loop (promoted defaults = the measured optimum)
   fast_qmm.py              split-K MMA kernel for small-M 4-bit GEMM (M in [6,8] gate)
-  prefill_2box/            the two-box prefill module (wire/runner/server/orchestrator)
+  prefill_2box/            the two-box prefill module (wire/runner/server/orchestrator),
+                           including the per-request chunk branch (chunk_for)
+  serving_prefill2box/     the on-demand serving stack: ANE attach in the vendor's
+                           entry order (refuses to start without the warm-up log),
+                           launch/stop with fork-hash and health gates
   patches/fork-vs-upstream.diff   qwen3_5.py + utils.py + quant/awq.py vs upstream main
   patches/mlx_hd256_sdpa.patch    fused-SDPA coverage for head_dim 256
 harness/                   the exact scripts behind every number (fork-pinned, fail-loud)

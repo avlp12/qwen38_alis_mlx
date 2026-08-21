@@ -93,21 +93,61 @@ ANE improves the single box everywhere (+17.1% at 32K, +11.5% at 8K), yet the
 two-box ratio *falls* (1.90 → 1.80, and 1.71 → 1.47 at 8K). The pipeline ratio is
 set by the balance between compute and link transfer; ANE removes compute only,
 so transfer becomes a larger share and the ratio erodes. **The two levers do not
-multiply — they compete for the same headroom.** Whether the composition is
-net-positive is then a race between what ANE earns on one box and what the ratio
-loses, and the number of chunks decides it: 32K has sixteen chunks and amortises
-the chunk-2048 bubble, 8K has four and does not.
+multiply — they compete for the same headroom.**
 
-The general form: when two levers attack different bottlenecks, relieving one
-promotes the other, and the second lever's *relative* gain shrinks. Composition
-must be measured against a control in the same run. Multiplying two separately
-measured gains would have predicted roughly +17% at 32K; the truth is +10.6%, and
-at 8K it is negative.
+## Where the crossover actually is, and what puts it there
 
-Operationally we branch on prompt length: **two boxes and N>=32K gets ANE
-seq=2048 / chunk 2048 (863.5 tok/s, +17.8% over our previous best of 733); below
-that, ANE off with chunk 1024 (778.2). One box always runs ANE seq=2048** — there
-is no length at which turning it off helps a single box.
+The composition is positive at 32K and negative at 8K, so the serving stack has
+to branch. Finding the threshold meant sweeping both chunk schedules at eight
+lengths, alternated inside one process, with an offload-off control:
+
+| N | ANE@1024 | ANE@2048 | ratio | control@1024 | control@2048 | ratio |
+|---|---:|---:|---:|---:|---:|---:|
+| 8192 | 765.0 | 725.8 | 0.949 | 769.0 | 693.4 | 0.902 |
+| 9216 | 763.7 | 765.7 | 1.003 | | | |
+| 10240 | 776.9 | 777.5 | 1.001 | 779.9 | 721.2 | 0.925 |
+| **11264** | 776.8 | **799.2** | **1.029** | | | |
+| 12288 | 788.4 | 808.5 | 1.026 | 791.5 | 748.5 | 0.946 |
+| 16384 | 791.2 | 850.0 | 1.074 | 802.3 | 764.4 | 0.953 |
+| 24576 | 791.3 | 868.6 | 1.098 | | | |
+| 32768 | 773.0 | 854.9 | 1.106 | 768.4 | 753.8 | 0.981 |
+
+The control corrects the account I gave above. I had written that the wide chunk
+wins at 32K because sixteen chunks amortise its bubble where four do not. Half
+right: **with the offload off the wide chunk never wins anywhere in 8K-32K.**
+Decomposed against the control, two curves move in opposite directions:
+
+| N | wide-chunk bubble cost | ANE gain @2048 | ANE gain @1024 |
+|---|---:|---:|---:|
+| 8192 | -9.8% | +4.7% | -0.5% |
+| 10240 | -7.5% | +7.8% | -0.4% |
+| 12288 | -5.4% | +8.0% | -0.4% |
+| 16384 | -4.7% | +11.2% | -1.4% |
+| 32768 | -1.9% | +13.4% | +0.6% |
+
+The bubble cost does amortise with length (-9.8% → -1.9%) but never turns into a
+gain on its own; what carries the wide schedule over the line is the ANE gain,
+which grows the other way (+4.7% → +13.4%). The crossover is simply where the
+second exceeds the first — and the model reproduces the measured ratios, tying
+at 10240 where 7.8% meets 7.5%.
+
+The third column is the other half of the design. At chunk 1024 the offload is
+worth nothing at all (-0.5%, -0.4%, +0.6%) because it engages only on inputs of
+exactly `sequence_length` tokens. Attached at 2048 it costs nothing when it
+stands aside, so **one loaded model serves both regimes** and the branch is a
+per-request choice rather than a second process.
+
+## What we ship
+
+The un-cached suffix picks the schedule, at a threshold of **11264 tokens**. The
+crossover sits near 9216, but 9216-10240 is a tie, and switching inside a tie
+earns nothing — so the threshold is the first length where the gain clears the
+noise: zero opportunity cost, minimum risk of landing on the wrong side. The
+wiring is
+`--prefill-2box-chunk-long` with `--prefill-2box-long-tokens` (default 11264);
+turning the branch *on* stays opt-in, because without the offload it is a pure
+loss. One box always runs ANE seq=2048 — there is no length at which turning it
+off helps a single box.
 
 ## Decode: closed by arithmetic, not benchmarking
 
