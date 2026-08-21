@@ -97,6 +97,48 @@ is about **1.15x on the projection**, which is roughly +5% end to end. Against a
 two-box layer pipeline already delivering +72%, that is not a lever worth the
 dependency on a private runtime.
 
+## The full gain was chased, not conceded
+
+The obvious objection to stopping here is that a partial gain is not worth
+taking — so the question became whether the *full* gain was reachable. Four
+things were tried, and the order matters because each one narrowed what was left.
+
+**Is the collapse a runtime bug or the precision?** Substituting per-channel
+INT8 in pure MLX, with no Neural Engine involved at all, reproduces it exactly:
+mean KL 9.94 and top-1 1.66%, against 9.75 and 1.54% measured on the hardware.
+It is the precision.
+
+**Can the split be chosen better?** Per-channel INT8 sensitivity varies by 296x
+across a projection's output channels (4.47e-04 to 1.32e-01), and output channels
+can be permuted exactly — the same permutation on `down_proj`'s input columns
+leaves the layer's function unchanged, because SwiGLU is elementwise. Selecting
+the channels that tolerate INT8 best cut per-layer error 2.2x at a 30% share.
+**End to end it changed nothing**: KL 9.94 to 9.93 at 45%, 10.05 to 9.80 at 30%.
+Past a certain exposure the model is already in the saturated regime, and halving
+the per-layer error does not bring it back.
+
+**How much would be enough?** The layer sweep says this model absorbs six to
+eight layers of INT8 at this share. Reaching all sixty-four needs roughly an
+order of magnitude less error per layer. Clip search offers 1.02x, channel
+selection 2.2x. Only fp16 offers 10x.
+
+**Can fp16 be made fast enough?** Its ceiling is a 15% share, because the ANE
+runs fp16 at about half the GPU's rate for this shape. The runtime exposes two
+physical engines, so the last lever was a dual-ANE fp16 split — which measured
+**1.14x, identical to single-ANE**. `qwen35_ane_compile_fp16_linear` takes no
+instance argument, so both programs land on the same engine.
+
+So the requirement is a 10x error reduction at a 30-45% share, and what exists is
+a 10x reduction at a 15% share. **Speed and quality here are the same knob pulled
+in opposite directions**: the throughput comes *from* INT8, and INT8 per-channel
+is exactly what a model quantized per-group-of-64 cannot absorb. The local scale
+adaptation our 4-bit container already relies on is the thing the accelerator
+path throws away.
+
+Two upstream changes would reopen it — a group-wise INT8 program, or an
+instance-pinned fp16 compile — and neither is something a caller can build on top
+of a private runtime.
+
 ## A correctness bug worth reporting
 
 While building our own fp16 split we found that **the first execution of an ANE
