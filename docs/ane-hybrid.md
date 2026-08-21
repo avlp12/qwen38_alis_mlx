@@ -1,5 +1,17 @@
 # The Neural Engine, measured: what a CPU/GPU/ANE prefill split actually buys
 
+> **RETRACTED (2026-08-21).** Everything below about the mechanism destroying
+> output quality is **wrong**, and the error was mine. Driving the path the way
+> oMLX's own engine does — pre-load patches applied, then the load-time warm-up of
+> 224 ANE procedures — gives **mean KL 0.000264 and 100% top-1 agreement** on
+> their reference checkpoint, with 126 MLP and 96 GDN ANE operations confirmed
+> live. The catastrophic numbers reported here came from my harness calling
+> `enable_qwen35_ane_prefill` on an `mlx_lm`-loaded model, which skips that
+> warm-up; the "first execution returns garbage" bug I documented below is real,
+> and upstream already handles it. This document is being rewritten around the
+> corrected measurements. Do not cite the quality figures below.
+
+
 Apple ships a third compute unit on every M-series die, and oMLX 0.6.x added an
 opt-in hybrid prefill that puts part of each MLP on it. The benchmarks in those
 release notes are on *this* model — Qwen3.5-27B on an M3 Ultra — so the question
