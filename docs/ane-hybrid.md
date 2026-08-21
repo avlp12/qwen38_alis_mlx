@@ -139,6 +139,53 @@ Two upstream changes would reopen it — a group-wise INT8 program, or an
 instance-pinned fp16 compile — and neither is something a caller can build on top
 of a private runtime.
 
+## What the upstream implementation actually does
+
+The obvious next question is how a shipping feature can behave this way, so we
+read the path rather than inferring it.
+
+**There is no compensation mechanism.** `_compile_pair`'s `dense_slice`
+dequantizes the gate and up rows to fp32 and hands them straight to the ANE
+compiler — `mx.dequantize(...).astype(mx.float32)`, concatenated, nothing else.
+No pre-scaling, no group-scale preservation, no correction applied on the GPU
+side. For 4-bit weights the runtime path is a fused `qwen35_ane_q4_swiglu_t`
+rather than the plain hybrid matmul, but the weight reaching the Neural Engine is
+the same array. Our reimplementation was numerically identical to theirs.
+
+**It is not a checkpoint mismatch either.** Their own configs describe `oQ4e` as
+`{"bits": 4, "group_size": 64}` — the same granularity as ours. Whatever is lost
+by flattening sixty-four per-group scales into one per-channel scale is lost on
+their builds too.
+
+**Their shipped configuration reproduces it.** Running the split from PR #2966
+verbatim — ANE MLP 19%, ANE GDN 45%, CPU MLP 14%, CPU GDN 13% — with every stage
+confirmed live (128 ANE operations, 2.7 s of CPU matmul):
+
+```
+mean KL 9.77    p99 21.8    top-1 agreement 1.86%
+```
+
+Routing 14% to the CPU in fp16, which lowers the INT8 exposure to 19%, does not
+change the outcome.
+
+**And the reason it went unnoticed is structural: the tuner does not measure
+quality.** `omlx/admin/ane_tuning.py` computes `speedup_percent` and selects with
+`min(gate_results)` — time only. There is no KL, no perplexity, no logit
+comparison, no accuracy gate anywhere in the ANE tuning path. The sole quality
+claim attached to the feature is the per-tensor cosine 0.99999 in the PR, and
+that metric cannot see layer compounding.
+
+That is the lesson worth carrying past this model: **an automatic tuner with no
+quality gate optimizes toward destroying quality**, because the search has no
+reason not to. The feature ships opt-in and off by default, which is the
+mitigating fact, but a user who runs the built-in tuner and takes its
+recommendation gets the fastest configuration, which is also the worst one.
+
+One boundary on this claim: we ran their code against our checkpoint, not their
+published `oQ4e` build. The mechanism is checkpoint-independent — fp32 dense to
+per-channel INT8 — and their configs name group size 64, so a 4-bit group-64
+build should behave the same. We have not measured theirs.
+
 ## A correctness bug worth reporting
 
 While building our own fp16 split we found that **the first execution of an ANE
