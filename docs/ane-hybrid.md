@@ -181,10 +181,25 @@ reason not to. The feature ships opt-in and off by default, which is the
 mitigating fact, but a user who runs the built-in tuner and takes its
 recommendation gets the fastest configuration, which is also the worst one.
 
-One boundary on this claim: we ran their code against our checkpoint, not their
-published `oQ4e` build. The mechanism is checkpoint-independent — fp32 dense to
-per-channel INT8 — and their configs name group size 64, so a 4-bit group-64
-build should behave the same. We have not measured theirs.
+**Measured on their own reference build.** The release notes name
+`Qwen3.8-27B-oQ4e-fp16-mtp`; we downloaded it from the oMLX author's account (17
+GB) and ran their code, their configuration, unchanged:
+
+| build | mean KL | p99 | top-1 agreement |
+|---|---:|---:|---:|
+| **`Jundot/Qwen3.8-27B-oQ4e-fp16-mtp`** | **10.22** | 22.83 | **2.17%** |
+| ours (`q4v-fp16`) | 9.77 | 21.79 | 1.86% |
+
+Both with 128 ANE operations and 2.8 s of CPU matmul confirmed live. Their
+reference build is marginally the worse of the two.
+
+The checkpoints match where it matters. oQ4e is affine 4-bit group-64 with
+sensitivity overrides lifting `down_proj`, the GDN input projections and a few
+attention projections to 5 bits — the same construction we use, imatrix-guided,
+with an `oq_imatrix_report.json` shipped alongside. **`gate_proj` and `up_proj`
+are not in the override list**, so the two tensors the Neural Engine takes are
+plain 4-bit group-64 in both builds, and both lose the same thing when sixty-four
+per-group scales collapse into one per channel.
 
 ## A correctness bug worth reporting
 
