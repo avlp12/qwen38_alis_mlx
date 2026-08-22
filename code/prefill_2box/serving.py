@@ -66,6 +66,12 @@ def probe_runner(host, port, timeout=5):
         kind, ack = wire.recv_msg(sock)
         if kind != "json" or ack.get("op") != "hello_ack":
             raise TwoBoxError(f"prefill-2box runner bad hello ack: {ack}")
+        # 러너의 층 범위와 우리가 쓸 split 이 어긋나면 파이프라인은 **조용히 틀린 깊이의**
+        # 은닉 상태를 넘겨받는다. 프로토콜이 이미 lo/hi 를 알려주므로 여기서 잡는다.
+        if ack.get("lo") not in (None, 0):
+            raise TwoBoxError(
+                f"prefill-2box runner starts at layer {ack.get('lo')}, expected 0"
+            )
         if ack.get("mlx") != mx.__version__:
             raise TwoBoxError(
                 f"prefill-2box mlx mismatch: local {mx.__version__} vs "
@@ -120,6 +126,15 @@ class ServingPrefill:
             return self._tb
         try:
             tb = TwoBoxPrefill(self.model, self.host, port=self.port, split=self.split)
+            remote_hi = (tb.remote_meta or {}).get("hi")
+            if remote_hi is not None and int(remote_hi) != int(self.split):
+                tb.close()
+                raise TwoBoxError(
+                    f"split mismatch: runner serves layers [0, {remote_hi}) but this "
+                    f"server was started with --prefill-2box-split {self.split}. The "
+                    "pipeline would splice hidden states at the wrong depth; restart "
+                    "the runner with --hi {self.split} or pass the runner's value."
+                )
         except OSError as e:
             raise TwoBoxError(
                 f"prefill-2box runner unreachable at {self.host}:{self.port} ({e})"

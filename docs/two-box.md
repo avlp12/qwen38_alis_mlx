@@ -81,6 +81,52 @@ chunk sits in the schedule — so **uniform chunks are optimal** and tail-shrink
 tricks buy nothing. Measured within 1.5-4% of the model everywhere (residual =
 per-chunk Python/link fixed cost).
 
+## 4b. The split point is a bandwidth question, and 32/32 was an accident of symmetry
+
+The bubble law fixes the *schedule* (uniform chunks) but says nothing about the
+*allocation*. We cut at 32/32 and verified it balanced to 0.3-0.6% — which is
+correct, and tells you nothing, because two identical boxes balance at half no
+matter what rule you use.
+
+FreeToken (arXiv 2608.16157) allocates work between two paths in proportion to
+their **measured** bandwidths. On a single unified-memory Mac that idea has no
+signal — there is no transfer step to trade against compute. Across a
+Thunderbolt-linked pair there is: local memory runs at roughly 800 GB/s and the
+link sustains 4.35 GB/s, a sharper asymmetry than the PCIe/host gap the paper
+exploits. In a layer pipeline the two "paths" are the two boxes and the relevant
+bandwidth is each box's prefill throughput, so the rule reads
+
+```
+split* = L · T_remote / (T_remote + T_local)
+```
+
+To tell that apart from "just use half", the pair has to stop being symmetric.
+We made it so by attaching the ANE hybrid to one box only — a measured 17%
+compute gap — and swept the split at a 32K prompt, chunk 2048, both boxes
+exclusively idle:
+
+| split | symmetric (ANE both) | asymmetric (ANE local only) |
+|---:|---:|---:|
+| 24 | 722.4 | 725.9 |
+| 28 | 793.0 | 795.7 |
+| 30 | 825.1 | **806.9** |
+| 32 | **869.0** | 758.2 |
+| 36 | 791.6 | 684.1 |
+| | predicted 32.0, peak 32 | predicted 29.5, peak 30 |
+
+The optimum moved, the rule predicted where, and **holding 32 costs 6.0%** once
+the pair is uneven. A bubble-dominated split would not have moved at all.
+
+So the launcher can compute the cut instead of hardcoding it: `AUTO_SPLIT=1`
+times one 8K prefill on each box (about three minutes each) and applies the
+formula. On the measured pair it returns 30 for the uneven case and 32 for the
+even one — both equal to the swept peak. And the fork now refuses to start when
+the runner's layer range disagrees with `--prefill-2box-split`, which until now
+could splice hidden states at the wrong depth without a word.
+
+This matters for a pairing we do not have yet: an M3 Ultra beside a 24GB M4 mini
+is not a 50/50 machine.
+
 ## 5. Results
 
 Crossed order, cooldown-controlled, twice-reproduced (repeat spread <= 0.15%);

@@ -166,3 +166,33 @@ k=8 rejection was a kernel-window exit (verify width 9 leaves the split-K
 M∈[6,8] window, `[RA20]`), not draft economics — so widening the kernel to
 M≤16 and re-sweeping k=8-12 is the follow-up this dossier funds, and the
 answer to the coverage question upstream in mlx#4265.
+
+## FreeToken (arXiv 2608.16157, Aug 2026) — edge-native MoE serving
+
+Reviewed 2026-08-22. Their core is a split rule: given m missing experts, fill
+`q* ≈ m·B_P/B_H` of them over PCIe and run the rest on the CPU, where both
+bandwidths are profiled on the target machine at deployment. Around it sit an LRU
+expert residency space that follows the router, routing control kept GPU-resident
+inside a captured CUDA graph, semantic-anchor checkpoints of recurrent state, and
+cache resizing at scheduler safe points. Headline: GLM-5.2 753B at 14.9 tok/s on
+an RTX PRO 6000 (2.0x llama.cpp), 35B at 39.3 tok/s on an 8GB laptop.
+
+**What does not transfer.** `q*` exists only where B_P ≪ B_H. Unified memory has
+no transfer step to trade against compute, and with the model fully resident there
+are no expert misses to schedule — both halves of their design lose their signal.
+Their own framing says as much. For reference, our GLM-5.2 builds serve at 18.48
+tok/s (3.5bpw) and 20.48 (2.56bpw) on one M3 Ultra.
+
+**What does.** The *shape* of the rule — allocate divisible work in proportion to
+measured throughputs rather than a fixed fraction — survives on a Thunderbolt pair,
+where the asymmetry is real (800 GB/s local vs 4.35 GB/s link). Measured in
+[two-box.md](two-box.md) §4b: making our pair uneven moves the optimal layer split
+from 32 to 30, the rule predicts 29.5, and holding 32 costs 6.0%. Our own bubble
+law governs the schedule and never spoke to the allocation; 32/32 was symmetry,
+not analysis.
+
+**Still open for us.** Their semantic-anchor checkpointing is hardware-neutral and
+looks worth more on our model than on theirs: 48 of our 64 layers are recurrent
+(GatedDeltaNet), and a recurrent state cannot be sliced by position the way a KV
+cache can, so a prefix-cache miss after an agent edits its context means a full
+re-prefill — 38 s at 32K even at 863 tok/s. Not yet built.

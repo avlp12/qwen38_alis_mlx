@@ -1,0 +1,10 @@
+{
+"split": 36,
+"N": 32768,
+"chunk": 2048,
+"ane_local": true,
+"tok_s_2box": 684.1317133687106,
+"tok_s_1box_local": 485.360154190892,
+"t_prefill_2box": 47.89574779197574,
+"t_chunks": null
+}

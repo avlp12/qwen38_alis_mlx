@@ -1,0 +1,69 @@
+[09:51:47] ✓ 양 박스 유휴 확인
+[09:51:47] ── 팔 sym (epsilon ANE=1, 로컬 ANE=1) ──
+[runner-ane] 부착 64 · 워밍업 있음
+[local] ANE 부착 64
+[연결] pid=13716 split=24
+[09:52:37] cooldown 30s 
+[09:53:53] cooldown 20s 
+  split=24 2box 722.4 tok/s · 로컬 1box 486.6
+SPLIT-POINT-DONE
+[runner-ane] 부착 64 · 워밍업 있음
+[local] ANE 부착 64
+[연결] pid=13958 split=28
+[09:56:12] cooldown 30s 
+[09:57:24] cooldown 20s 
+  split=28 2box 793.0 tok/s · 로컬 1box 483.2
+SPLIT-POINT-DONE
+[runner-ane] 부착 64 · 워밍업 있음
+[local] ANE 부착 64
+[연결] pid=14135 split=30
+[09:59:43] cooldown 30s 
+[10:00:54] cooldown 20s 
+  split=30 2box 825.1 tok/s · 로컬 1box 484.3
+SPLIT-POINT-DONE
+[runner-ane] 부착 64 · 워밍업 있음
+[local] ANE 부착 64
+[연결] pid=14448 split=32
+[10:03:13] cooldown 30s 
+[10:04:22] cooldown 20s 
+  split=32 2box 869.0 tok/s · 로컬 1box 483.3
+SPLIT-POINT-DONE
+[runner-ane] 부착 64 · 워밍업 있음
+[local] ANE 부착 64
+[연결] pid=14625 split=36
+[10:06:41] cooldown 30s 
+[10:07:53] cooldown 20s 
+  split=36 2box 791.6 tok/s · 로컬 1box 484.8
+SPLIT-POINT-DONE
+[10:09:23] ── 팔 asym (epsilon ANE=0, 로컬 ANE=1) ──
+[local] ANE 부착 64
+[연결] pid=14886 split=24
+[10:09:53] cooldown 30s 
+[10:11:09] cooldown 20s 
+  split=24 2box 725.9 tok/s · 로컬 1box 484.4
+SPLIT-POINT-DONE
+[local] ANE 부착 64
+[연결] pid=15057 split=28
+[10:13:09] cooldown 30s 
+[10:14:21] cooldown 20s 
+  split=28 2box 795.7 tok/s · 로컬 1box 485.1
+SPLIT-POINT-DONE
+[local] ANE 부착 64
+[연결] pid=15260 split=30
+[10:16:21] cooldown 30s 
+[10:17:33] cooldown 20s 
+  split=30 2box 806.9 tok/s · 로컬 1box 484.7
+SPLIT-POINT-DONE
+[local] ANE 부착 64
+[연결] pid=15475 split=32
+[10:19:32] cooldown 30s 
+[10:20:47] cooldown 20s 
+  split=32 2box 758.2 tok/s · 로컬 1box 484.8
+SPLIT-POINT-DONE
+[local] ANE 부착 64
+[연결] pid=15664 split=36
+[10:22:46] cooldown 30s 
+[10:24:05] cooldown 20s 
+  split=36 2box 684.1 tok/s · 로컬 1box 485.4
+SPLIT-POINT-DONE
+[10:25:34] SWEEP-ALL-DONE

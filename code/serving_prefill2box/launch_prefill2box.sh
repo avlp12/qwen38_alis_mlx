@@ -29,6 +29,7 @@ RPORT=${RPORT:-39919}
 MODEL=${MODEL:-~/qwen38/q4v-fp16}
 EPS_MODEL=${EPS_MODEL:-'~/qwen38/q4v-fp16'}
 SPLIT=${SPLIT:-32}
+AUTO_SPLIT=${AUTO_SPLIT:-0}   # 1이면 양 박스 처리량을 실측해 분할점을 계산
 CHUNK=${CHUNK:-1024}
 CHUNK_LONG=${CHUNK_LONG:-2048}
 LONG_TOKENS=${LONG_TOKENS:-11264}   # 실측 교차점 [I169]
@@ -67,6 +68,31 @@ if [[ $H1 != $H2 ]]; then
     [[ $H1 == $H2 ]] || fail "동기 후에도 해시 불일치"
 fi
 say "✓ 포크 동기 ($H1)"
+
+# ── 2b) 자동 분할점 (선택) ───────────────────────────────────────────
+# 층-파이프의 균형점은 각 박스 처리량 비를 따른다:
+#   split* = L · T_remote / (T_remote + T_local)
+# 동일한 쌍이면 L/2 로 자명하지만 비대칭 쌍(M3 Ultra + M4 mini, 한쪽만 ANE …)에서는
+# 정점이 이동한다 — 실측으로 32→30 이동, 32 고정 시 −6.0%([I194]).
+if [[ $AUTO_SPLIT == 1 ]]; then
+    say "── 자동 분할점: 양 박스 처리량 실측 ──"
+    scp -q $SD/probe_box.py ${EPS}:qwen38/serving_prefill2box/ || fail "프로브 scp 실패"
+    T_LOC=$(cd ~ && env FORK=$FORK MODEL=$MODEL ANE=$ANE CHUNK=$CHUNK_LONG \
+        OMLX_BASE_PATH=$OMLX_HOME $VENV $SD/probe_box.py 2>/dev/null \
+        | awk '/TOKS_PER_SEC/{print $2}')
+    T_REM=$(ssh $EPS "cd ~ && FORK=$EPS_FORK MODEL=$EPS_MODEL ANE=$ANE CHUNK=$CHUNK_LONG \
+        OMLX_BASE_PATH=~/qwen38/exp15_ane/omlx_home $EPS_VENV \
+        ~/qwen38/serving_prefill2box/probe_box.py 2>/dev/null" \
+        | awk '/TOKS_PER_SEC/{print $2}')
+    [[ -n ${T_LOC:-} && -n ${T_REM:-} ]] || fail "처리량 측정 실패 (로컬 '${T_LOC:-}' 원격 '${T_REM:-}')"
+    SPLIT=$(python3 -c "
+import sys
+L, tl, tr = 64, float('$T_LOC'), float('$T_REM')
+s = round(L * tr / (tr + tl))
+s = max(4, min(L - 4, s))
+print(s)")
+    say "  로컬 ${T_LOC} tok/s · 원격 ${T_REM} tok/s → split=$SPLIT"
+fi
 
 # ── 3) epsilon 러너 기동 ─────────────────────────────────────────────
 ssh $EPS "pkill -TERM -f 'prefill_2box.server|runner_ane' 2>/dev/null; sleep 5" || true

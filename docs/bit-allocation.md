@@ -174,13 +174,30 @@ everywhere. An hour of compute produced a build we briefly read as evidence that
 promotion does not compose with AWQ. It does — by 16%. Count the *hits*, not the
 inputs, and verify the predicate before the build, not after.
 
-**A build that silently loses tensors on one machine.** The same fork (file
-hashes equal), the same source (config and index sha256 equal), the same MLX
-0.32.0 and the same Python produced, on our second box, a checkpoint with the
-**MTP module unquantized and the vision tower missing entirely** — 8 fewer
-quantized modules and 333 dropped tensors, with no warning in the log. It was
-caught by a file-size mismatch, not by any check we had. Until it is explained,
-publishable checkpoints are built on one machine only. Cause still unknown.
+**A hardcoded path that resolves to something else on the other machine.** The
+same fork (file hashes equal), the same source (config and index sha256 equal),
+the same MLX and Python produced, on our second box, a checkpoint with the MTP
+module unquantized and the vision tower missing entirely — 8 fewer quantized
+modules and 333 dropped tensors, no warning anywhere. Every environment probe we
+ran said the two machines were identical, because every probe passed the fork
+path explicitly.
 
-Raw records: `results/exp16_unsloth/`. Ledger `[I173]`-`[I179]`, `[RA62]`-`[RA65]`,
-`[CA36]`-`[CA37]`.
+The cause was one line of ours: `sys.path.insert(0, "~/glm5.2/mlx-lm")`. On the
+build machine that is the current fork. On the other machine a stale tree from a
+previous campaign still sits at that path — no MTP port, no
+`passthrough_patterns` — and inserting it at position 0 shadowed the `PYTHONPATH`
+that pointed at the right one. Three symptoms, one line: the missing MTP head
+accounts for the module-count gap, the missing passthrough declaration for the
+silent log, and `sanitize` dropping vision with nothing to preserve it for the
+lost tower.
+
+Two guards now, because size was the only thing that caught it: the fork comes
+from `FORK` rather than a hardcoded path, the loaded tree is **asserted** to
+declare `passthrough_patterns` before anything is built, and the finished
+checkpoint is **counted** — a build whose index has zero vision or zero MTP
+tensors fails instead of shipping. A probe that specifies the thing under test
+cannot detect a fault in how that thing gets selected.
+
+Raw records: `results/exp16_unsloth/`, including the adversarial review that
+overturned our first conclusion. Ledger `[I173]`-`[I189]`, `[RA62]`-`[RA66]`,
+`[CA36]`-`[CA39]`, `[PA58]`-`[PA59]`.
