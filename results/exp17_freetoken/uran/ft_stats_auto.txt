@@ -1,0 +1,105 @@
+== /v1/stats
+{
+ "instance_id": "973f870d-2bb1-4fdb-9694-4635d8b78413",
+ "model": {
+  "id": "DeepSeek-V4-Flash",
+  "ctx": 1048576,
+  "attn": "mha",
+  "moe": true,
+  "sampling": {
+   "temperature": 1.0,
+   "top_p": 1.0
+  }
+ },
+ "uptime_s": 746,
+ "kv": {
+  "used_pages": 0,
+  "total_pages": 502,
+  "page_size": 1
+ },
+ "mamba": null,
+ "swa": {
+  "used_pages": 0,
+  "total_pages": 100,
+  "page_size": 128
+ },
+ "vram_bytes": 29414653952,
+ "throughput": {
+  "decode_tps": 0.0,
+  "prefill_tps": 0.0
+ },
+ "requests": {
+  "active": 0,
+  "completed": 4,
+  "p95_ms": 13504,
+  "ttft_mean_ms": 4649,
+  "prompt_tokens_total": 3166,
+  "completion_tokens_total": 382
+ }
+}
+== /v1/cache/status
+{
+ "state": "serving",
+ "last_rebuild": null,
+ "geometry": {
+  "num_pages": 502,
+  "page_size": 128,
+  "moe_cache_size": 1195,
+  "num_mamba_slots": 0,
+  "num_experts": 256,
+  "num_moe_layers": 43,
+  "moe_cache_policy": "lru",
+  "unit_bytes": {
+   "kv_per_token": 6888,
+   "moe_per_expert": 13369344,
+   "mamba_per_slot": 0,
+   "swa_per_token": 139392
+  },
+  "swa_full_tokens_ratio": 0.2,
+  "swa_page_size": 128,
+  "num_swa_pages": 100,
+  "cache_budget_bytes": 18718654464,
+  "reasoning": {
+   "gears": [
+    "off",
+    "high",
+    "max"
+   ],
+   "default": "off",
+   "kwargs": {
+    "off": {
+     "enable_thinking": false,
+     "thinking_mode": "disabled"
+    },
+    "high": {
+     "enable_thinking": true,
+     "thinking_mode": "enabled",
+     "reasoning_effort": "high"
+    },
+    "max": {
+     "enable_thinking": true,
+     "thinking_mode": "enabled",
+     "reasoning_effort": "max"
+    }
+   }
+  },
+  "limits": {
+   "kv_tokens": {
+    "min": 3968,
+    "max": 2717574
+   },
+   "moe_experts": {
+    "min": 256,
+    "max": 1400
+   },
+   "mamba_slots": {
+    "min": 0,
+    "max": 0
+   },
+   "swa_tokens": {
+    "min": 3968,
+    "max": 134287
+   }
+  }
+ }
+}

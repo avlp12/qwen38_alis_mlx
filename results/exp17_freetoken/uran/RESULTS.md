@@ -284,3 +284,54 @@ bf16 에서 단순합 115.2 가 겹치면 68.3 으로 떨어지는 것을 그대
 148.7 GiB. 우리 llama.cpp 기준선은 `UD-Q4_K_XL`(헤더상 MXFP4) 144.4 GiB 로 **비트폭이 두 배
 다르다.** 크기가 비슷한 것은 GGUF 변환본이 파라미터를 284.33B 로 세는 반면 FP8 원본은
 그보다 작기 때문이다. **14.59 tok/s 와 22–25 를 그대로 나란히 놓아서는 안 된다.**
+
+## FreeToken end to end (2026-08-23)
+
+Server: `ft serve --model-path /root/models/DeepSeek-V4-Flash --host 0.0.0.0 --port 1919`,
+resolved to `moe_backend=offload`, `attention_backend=dsv4_sparse`, `cache_type=swa_radix`,
+`page_size=128`. Client: prompt 512 tokens, generate 128, 3 rounds, streaming, decode measured
+with TTFT excluded — matched to `llama-bench -p 512 -n 128`.
+
+### The checkpoint is fp4, not fp8
+
+| dtype | bytes | share | what it is |
+|---|---|---|---|
+| I8 | 132.0 GiB | 88.8% | routed experts, fp4 packed two per byte (283.5B logical params) |
+| F8_E8M0 | 8.3 GiB | 5.6% | block scales — MXFP4 family |
+| F8_E4M3 | 5.6 GiB | 3.8% | shared experts and dense |
+| BF16 | 2.6 GiB | 1.8% | norms, embeddings |
+
+148.6 GiB total against the llama.cpp UD-Q4_K_XL GGUF's 144.44 GiB, whose header also reports
+MXFP4 for the MoE. Same format class, 2.9% apart in size — the comparison below is like for like.
+
+### Result and ablation
+
+One variable changed: the MoE cache size. (512 is the floor — below it prefill overlap's two
+borrowed expert-layer buffers trip an assertion.)
+
+| configuration | residency | decode peak / steady | TTFT | vs llama.cpp |
+|---|---|---|---|---|
+| llama.cpp `-ncmoe 40`, static | — | 14.59 | — | baseline |
+| FreeToken, `--moe-cache-size 512` | 4.65% | **16.24** / 15.3 | 9.32 s | +11% |
+| FreeToken, `--moe-cache-auto` (1195) | 10.9% | **21.48** / 20.3 | 3.15 s | **+47%** |
+
+**76% of the advantage is router-following LRU residency; 24% is the overlapped CPU+PCIe host
+path.** The host-bandwidth arithmetic closes at both points. Each token activates 6 experts across
+43 layers at 12.8 MiB per expert = **3.21 GiB** if every lookup misses:
+
+- at 4.65% residency, 16.24 tok/s × 3.21 GiB = **52.2 GB/s**, which is the overlapped host ceiling
+  measured independently on this box (53.68 GB/s) — so the hit rate is essentially **zero**. Below
+  some threshold LRU catches nothing.
+- at 10.9% residency, the same ceiling implies only 2.50 GiB read per token → a **22% hit rate,
+  twice the residency**. That factor of two is the routing locality the paper is built on.
+
+Raw: `ft_bench_auto.log`, `ft_bench_512.log`, `ft_stats_auto.txt`, `ft_stats_512.txt`.
+
+### What this means for the MLX stack
+
+Nothing, and now for a measured reason. Both halves of FreeToken's advantage are ways of coping
+with **VRAM smaller than the model**: the q\* split divides work between a device and a host across
+a link, and LRU residency decides which experts are worth keeping on the device. On unified memory
+there is no link to divide across and every expert is already resident, so both terms are
+identically zero. The paper's claims hold — they were reproduced here at 1.47× llama.cpp on the
+hardware they are aimed at — and they are aimed at hardware we do not have.

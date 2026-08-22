@@ -1,0 +1,74 @@
+== /v1/stats
+{
+ "instance_id": "be8fca89-9f0b-4f74-8001-b9f5cde0c56e",
+ "model": {
+  "id": "DeepSeek-V4-Flash",
+  "ctx": 1048576,
+  "attn": "mha",
+  "moe": true,
+  "sampling": {
+   "temperature": 1.0,
+   "top_p": 1.0
+  }
+ },
+ "uptime_s": 55,
+ "kv": null,
+ "mamba": null,
+ "swa": null,
+ "vram_bytes": 0,
+ "throughput": {
+  "decode_tps": 0.0,
+  "prefill_tps": 0.0
+ },
+ "requests": {
+  "active": 2,
+  "completed": 0,
+  "p95_ms": 0,
+  "ttft_mean_ms": 0,
+  "prompt_tokens_total": 5,
+  "completion_tokens_total": 0
+ }
+}
+== /v1/cache/status
+{
+ "state": "serving",
+ "last_rebuild": null,
+ "geometry": {
+  "num_pages": 108,
+  "page_size": 128,
+  "moe_cache_size": 512,
+  "num_mamba_slots": 0,
+  "num_experts": 256,
+  "num_moe_layers": 43,
+  "moe_cache_policy": "lru",
+  "unit_bytes": {
+   "kv_per_token": 6888,
+   "moe_per_expert": 13369344,
+   "mamba_per_slot": 0,
+   "swa_per_token": 139392
+  },
+  "swa_full_tokens_ratio": 0.2,
+  "swa_page_size": 128,
+  "num_swa_pages": 30,
+  "cache_budget_bytes": 18718654464,
+  "reasoning": null,
+  "limits": {
+   "kv_tokens": {
+    "min": 3968,
+    "max": 2717574
+   },
+   "moe_experts": {
+    "min": 256,
+    "max": 1400
+   },
+   "mamba_slots": {
+    "min": 0,
+    "max": 0
+   },
+   "swa_tokens": {
+    "min": 3968,
+    "max": 134287
+   }
+  }
+ }
+}
