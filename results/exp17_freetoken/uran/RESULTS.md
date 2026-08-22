@@ -335,3 +335,48 @@ a link, and LRU residency decides which experts are worth keeping on the device.
 there is no link to divide across and every expert is already resident, so both terms are
 identically zero. The paper's claims hold — they were reproduced here at 1.47× llama.cpp on the
 hardware they are aimed at — and they are aimed at hardware we do not have.
+
+## Can the iGPU and the NPU help? (2026-08-23)
+
+No. Three configurations, MoE cache pinned at 1195 slots (10.9% residency) so only the backend
+differs, same client (512-token prompt, 128 generated, 3 rounds):
+
+| configuration | decode peak | median TTFT | vs baseline |
+|---|---|---|---|
+| `offload` (default) | **21.39** | 3.35 s | baseline |
+| `--moe-backend hybrid` | 13.21 | 3.33 s | **−38.2%** |
+| `offload --moe-cpu-layers 8` | 15.79 | 3.25 s | **−26.2%** |
+
+Baseline reproducibility 0.4% (21.39 against 21.48 measured earlier). **TTFT is unchanged across
+all three** — this lever touches decode only.
+
+**The default path gives host compute nothing to do.** `--moe-cpu-layers` documents "Unset = all
+layers on GPU", so under `offload` the CPU performs *zero* expert arithmetic. Re-deriving the
+earlier ablation against a saturated PCIe link instead of a CPU+PCIe overlap makes both residency
+points land on the same number — 49.7 GB/s, with implied hit rates of 11.3% and 32.9% — which is
+the signature of a link-bound path.
+
+**Moving work to the host is available, and it loses.** GPU utilization falls from 98% to 46–57%
+while the CPU rises to ~50%: the work moved, and the GPU now spends half its time waiting. Cutting
+the share to 8 of 43 layers still costs 26%, so this is not hybrid's auto-split being mistuned —
+host compute loses on its own merits.
+
+**Nothing on this box is decisively faster than the link it would relieve.** Measured expert-delivery
+rates: PCIe Gen5 x16 H2D **49.70**, iGPU **53.42**, NPU **48.00**, CPU **36.47** GB/s. The iGPU is
+7% above the link, the NPU 3% below it — and all three share one memory controller with the PCIe
+DMA, so they cannot be summed against it.
+
+**The physics ceiling is +46%; the measurement is −38%.** PCIe already consumes 49.7 GB/s of DRAM,
+leaving 22.6 GB/s of the 72.35 GB/s read ceiling for host compute; with perfect overlap that would
+be 72.3 GB/s, or 31.1 tok/s. The 84-point gap between that and what hybrid actually does is
+**batch-1 GEMV latency and 43 synchronizations per token**, not bandwidth. Raising host compute
+1.61× by adding the iGPU and NPU (36.47 → 58.71 GB/s) scales 13.21 to **21.3 tok/s — a tie with
+the 21.39 baseline.** The best case is break-even, and there is no OpenVINO or Level-Zero backend
+in the engine, so it would be an implementation rather than a flag.
+
+The link is also already maxed: `nvidia-smi` under load reports **Gen 5 x16** at 98% GPU
+utilization (the Gen1 reading at idle is ASPM downtraining, easy to misread), and 49.70 GB/s is 79%
+of the 63 GB/s theoretical, which is ordinary overhead.
+
+**The only real lever left on this box is residency, which means VRAM.** Raw: `bench_auto2.log`,
+`bench_hybrid.log`, `bench_cpul8.log`, `sweep.log`, `ft_sweep.sh`.

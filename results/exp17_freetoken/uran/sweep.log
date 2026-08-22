@@ -1,0 +1,28 @@
+[08:19:27] ── auto2 ──
+[08:21:02] 준비됨 · 벤치
+Resolved config: moe_backend='offload', attention_backend='dsv4_sparse', cache_type='swa_radix', page_size=128
+  "moe_cache_size": 1195,
+  "num_experts": 256,
+  [r1] TTFT 3.62s · 디코드 20.72 tok/s (126토큰)
+  [r2] TTFT 3.20s · 디코드 20.34 tok/s (126토큰)
+  [r3] TTFT 3.35s · 디코드 21.39 tok/s (116토큰)
+최고 디코드 21.39 tok/s
+[08:21:31] ── hybrid ──
+[08:23:54] 준비됨 · 벤치
+Resolved config: moe_backend='hybrid', attention_backend='dsv4_sparse', cache_type='swa_radix', page_size=128
+  "moe_cache_size": 1195,
+  "num_experts": 256,
+  [r1] TTFT 3.58s · 디코드 12.59 tok/s (98토큰)
+  [r2] TTFT 3.20s · 디코드 12.26 tok/s (126토큰)
+  [r3] TTFT 3.33s · 디코드 13.21 tok/s (118토큰)
+최고 디코드 13.21 tok/s
+[08:24:32] ── cpul8 ──
+[08:26:55] 준비됨 · 벤치
+Resolved config: moe_backend='offload', attention_backend='dsv4_sparse', cache_type='swa_radix', page_size=128
+  "moe_cache_size": 1195,
+  "num_experts": 256,
+  [r1] TTFT 3.51s · 디코드 15.23 tok/s (126토큰)
+  [r2] TTFT 3.23s · 디코드 15.05 tok/s (126토큰)
+  [r3] TTFT 3.25s · 디코드 15.79 tok/s (114토큰)
+최고 디코드 15.79 tok/s
+[08:27:30] FT-SWEEP-DONE
