@@ -2736,3 +2736,10 @@ gesicht ~/venv_mlxjit: brew py3.14 --system-site-packages + ~/qwen38/mlx-0.32.0.
 - [CA95] "2K부터 붕괴 = rope 단독 원인" 서술은 기각 — index_topk 512×ratio4=2048 문턱 등 공존 편차가 복합 기제일 수 있어, 초안을 '차등 실측 기반 귀속'으로 완화. [I253] 부수 확인: 우리 수정본의 스톡 폴백 경로(992-996, 1003-1007행)에 zeros comp_mask 잔존(wsdpa 폴백·B>1 프리필 시 재누출), 인덱서 의미 불일치·S=1 top-k 미작동·청크 캐리 리셋 등 추가 편차 목록 확보.
 - [I254] 초안 v2 작성 완료(3항목+인덱서 편차 요약, 인과 완화) — 게시는 사용자 승인 대기.
 - [I255] 3케이블 프리필/디코드 실측(DSv4-Flash 0731, TP2 jaccl 서빙): 13940 tok 프리필 25.6s ≈ 544 tok/s(e2e), 디코드 41.1(단일)/114(집계 bs8). jaccl은 피어당 rdma 장치 1개만 배선 가능(MLX_IBV_DEVICES가 피어-인덱스 배열) → 서빙 경로는 멀티링크 미활용. 링 all_sum 2.0×는 대역폭-지배 국면(분산 덤프·가중치 동기화·링-백엔드 프리필)에만 적용, 디코드는 레이턴시-지배라 케이블 수 무관(177→190µs 불변 실측).
+
+## 2026-08-23 밤 III: jaccl 멀티-rdma — 패치 불필요·능력 실증·서빙 채택은 기각 (I256-I259)
+
+- [I256] jaccl 멀티링크는 C++ 패치 불필요 — 업스트림에 완비: 장치 파일이 피어당 문자열 또는 **배열** 허용(jaccl.cpp parse_devices_json), `--backend jaccl-ring`이 MLX_JACCL_RING=1 자동 설정, RingGroup이 최대 RING_MAX_CONNS=4 와이어로 reduce-scatter+all-gather를 스트라이핑(ring_impl.h all_reduce). 우리가 메시 모드(get_mesh_connectivity가 [0]번 장치만 사용)만 써 왔던 것.
+- [I257] 실측(512MB all_sum): 메시 1링크 9.31 GB/s·27.0µs / 링 1링크 7.98·30.3µs / **링 3링크 15.46 GB/s·30.6µs**. RDMA는 단일 케이블로도 TCP 링(4.75)의 2배. 함정: mlx.launch에 원시 python 경로를 주면 원격 랭크(홈 다름)에서 127 — $HOME 래퍼 스크립트 필수(전례 serve.sh와 동일).
+- [I258] 서빙 채택 실험: 13.9K 프리필 544→558 tok/s(+2.6%), bs8 집계 114→106(−7%) → **순손실, 메시-1링크로 롤백**. 판정: TP2 프리필은 통신-지배가 아님(통신 비중 약 7% 추정과 부합), 디코드는 레이턴시-지배라 링 모드 +3.6µs가 역효과.
+- [I259/PA33] 15.46GB/s 능력의 수혜처 = 대역폭-지배 작업(분산 로짓 덤프, 가중치 동기화, 향후 고차 TP/MoE all-to-all). hostfile_jaccl_r3.json은 /Users/Shared/tp2/에 보존 — 필요 시 즉시 투입 가능. 서빙 정본은 hostfile_jaccl2.json(메시) 유지.
