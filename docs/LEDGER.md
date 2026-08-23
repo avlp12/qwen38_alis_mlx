@@ -2676,3 +2676,15 @@ gesicht ~/venv_mlxjit: brew py3.14 --system-site-packages + ~/qwen38/mlx-0.32.0.
   로그: set_mtp_active 는 모델 빌드 시 동결(`_omlx_mtp_decode_enabled`) — 사후 토글로
   'off 대조'를 만들면 허구가 된다(진짜 대조는 비활성 빌드 별도 프로세스).
   **운영 확정: TP2×MTP d1 = 44.3 tok/s 가 이 스택의 현 천장, 컨트롤러 기본 활성.**
+- **[I237]** **★ TP2×MTP 서빙 승격 완료 — :8003 라이브** (exp23, "바퀴 재사용" 원칙):
+  레시피 serve_tp4_dspark(랭크0=HTTP·워커=제어소켓·랭크 합의 프리픽스 캐시)를 3점
+  각색만으로 가동 — ① 로더의 DSpark 단언을 legacy-MTP 허용으로 완화 ② shard_mtp 에
+  Flash MTPBlock 의 `.block` 중첩 해소 ③ wired limit 삽입. 실측(HTTP 경유):
+  **디코드 41.5 tok/s**(원시 44.3 대비 서버세 약 6%) · 5K 콜드 프리필 약 670 tok/s ·
+  정답 정합. **알려진 한계**: 프리픽스 캐시가 exact-extend 외 전부 miss — 원인 사슬은
+  (생성물의 thinking 토큰 ↔ 재인코딩 대화의 제거) 불일치 → trim 요구 → dsv4 회전
+  윈도우 캐시 trim 불가. 특정된 해법(미착수): 생성-전 상태 스냅숏을 슬롯에 보관
+  (5K 에 약 174MB) → 다음 턴이 항상 extend 로 적중.
+  기동: `mlx.launch --hostfile hostfile_jaccl2.json /Users/Shared/tp2/serve.sh`
+  (모델명 deepseek-v4-flash-tp2, :8003, depth 1, ctx 32K). 종료: 양 노드
+  serve_tp4_dspark pkill. GuruNote(:8002)·CRA 자산 무접촉.
