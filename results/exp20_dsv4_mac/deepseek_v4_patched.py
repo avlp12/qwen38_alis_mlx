@@ -638,7 +638,7 @@ class CompressedKVCache(KVCache):
             return self.local.batch_size
         return 1
 
-    def accumulate(self, x: mx.array, compressor: 'Compressor') -> Optional[mx.array]:
+    def accumulate(self, x: mx.array, compressor: 'Compressor', rope=None) -> Optional[mx.array]:
         """Buffer tokens and compress when a full window is ready.
 
         Uses ds4-style rolling state: each token is immediately projected through
@@ -662,6 +662,9 @@ class CompressedKVCache(KVCache):
         if S > 1:
             ckv = compressor(x)
             if ckv.shape[1] > 0:
+                if rope is not None:
+                    base = 0 if self._pool is None else self._pool.shape[1]
+                    ckv = _rope_pool_rows(ckv, rope, base, r, compressor.rope_head_dim)
                 self._pool = ckv if self._pool is None else mx.concatenate([self._pool, ckv], axis=1)
             remainder = S % r
             if remainder > 0:
@@ -700,11 +703,53 @@ class CompressedKVCache(KVCache):
             pooled = (self._state_kv * weights).sum(axis=1, keepdims=True)
             pooled = pooled[:, :, :compressor.head_dim]
             ckv = compressor.norm(pooled.astype(x.dtype))
+            if rope is not None:
+                base = 0 if self._pool is None else self._pool.shape[1]
+                ckv = _rope_pool_rows(ckv, rope, base, r, compressor.rope_head_dim)
             self._pool = ckv if self._pool is None else mx.concatenate([self._pool, ckv], axis=1)
             self._state_kv = None
             self._state_score = None
 
         return self._pool
+
+
+def _rope_pool_rows(ckv, rope, base_row, ratio, rope_dims):
+    """압축 풀 행의 마지막 rope_dims 차원에 블록 시작 위치의 RoPE 적용.
+
+    참조(ref_model.py apply_rotary_emb(kv[..., -rd:], freqs_cis[:cutoff:ratio]))와
+    동일: 행 (base_row + i)의 위치는 (base_row + i) * ratio. 위치가 ratio 간격의
+    비연속이라 mx.fast.rope 대신 rope.inv_freq로 직접 계산한다(페어링은
+    DeepseekV4RoPE 순수-MLX 경로와 동일한 인터리브드).
+    """
+    P = ckv.shape[1]
+    if P == 0:
+        return ckv
+    pos = (base_row + mx.arange(P, dtype=mx.float32)) * ratio
+    theta = pos[:, None] * rope.inv_freq[None, :]
+    cos = mx.cos(theta).astype(ckv.dtype)[None, :, :]
+    sin = mx.sin(theta).astype(ckv.dtype)[None, :, :]
+    tail = ckv[..., -rope_dims:]
+    rot = tail.reshape(*tail.shape[:-1], rope_dims // 2, 2)
+    x0, x1 = rot[..., 0], rot[..., 1]
+    y = mx.stack((x0 * cos - x1 * sin, x0 * sin + x1 * cos), axis=-1)
+    return mx.concatenate([ckv[..., :-rope_dims], y.reshape(*tail.shape)], axis=-1)
+
+
+def _pool_causal_mask(mask, n_comp, offset, S, ratio, orig_idx=None):
+    """풀 행에 대한 쿼리별 인과 가시성 가산 마스크 (참조: i < (p+1)//ratio).
+
+    orig_idx: 인덱서 게더로 풀이 부분집합일 때의 원 행 인덱스 [n_comp] (없으면 arange).
+    반환: mask 앞에 붙일 [.., S, n_comp] 가산 마스크(mask.shape 선행 차원에 브로드캐스트).
+    """
+    thr = (offset + mx.arange(S, dtype=mx.int32) + 1) // ratio          # [S]
+    rows = orig_idx.astype(mx.int32) if orig_idx is not None else mx.arange(n_comp, dtype=mx.int32)
+    vis = rows[None, :] < thr[:, None]                                   # [S, n_comp]
+    is_float = mx.issubdtype(mask.dtype, mx.floating)
+    neg = mx.array(float("-inf"), dtype=mask.dtype) if is_float else mx.array(False)
+    zero = mx.array(0, dtype=mask.dtype) if is_float else mx.array(True)
+    cm = mx.where(vis, zero, neg)                                        # [S, n_comp]
+    comp_shape = list(mask.shape); comp_shape[-1] = n_comp
+    return mx.broadcast_to(cm.reshape((1,) * (len(comp_shape) - 2) + (S, n_comp)), comp_shape)
 
 
 class Compressor(nn.Module):
@@ -913,10 +958,14 @@ class V4Attention(nn.Module):
         if self.compress_ratio:
             comp_cache = cache if isinstance(cache, CompressedKVCache) else None
             if comp_cache is not None:
-                pool = comp_cache.accumulate(x, self.compressor)
+                pool = comp_cache.accumulate(x, self.compressor, self.compress_rope)
             elif S > 1:
                 pool = self.compressor(x)
-                pool = pool if pool.shape[1] > 0 else None
+                pool = (
+                    _rope_pool_rows(pool, self.compress_rope, 0,
+                                    self.compress_ratio, self.compressor.rope_head_dim)
+                    if pool.shape[1] > 0 else None
+                )
             else:
                 pool = None
 
@@ -929,6 +978,7 @@ class V4Attention(nn.Module):
                 if S > 1 and B == 1 and cache is not None:
                     compressed_k = None  # 스톡 폴백 시 아래에서 재구성
                 else:
+                    self._pool_orig_rows = None
                     if hasattr(self, "indexer") and ckv.shape[1] > self.args.index_topk:
                         topk_idx = self.indexer(x, qr)
                         if topk_idx is not None:
@@ -937,6 +987,8 @@ class V4Attention(nn.Module):
                                 (B, topk_idx.shape[1], self.head_dim),
                             )
                             ckv = mx.take_along_axis(ckv, idx, axis=1)
+                            if B == 1:
+                                self._pool_orig_rows = topk_idx[0]
                     compressed_k = ckv[:, None, :, :]
                     compressed_v = compressed_k
 
@@ -976,6 +1028,7 @@ class V4Attention(nn.Module):
             elif _wsdpa_pool is not None and compressed_k is None:
                 # 커널 폴백: 스톡 의미론(인덱서 게더 포함)으로 재구성
                 ckv = _wsdpa_pool
+                _orig_rows = None
                 if hasattr(self, "indexer") and ckv.shape[1] > self.args.index_topk:
                     topk_idx = self.indexer(x, qr)
                     if topk_idx is not None:
@@ -984,15 +1037,16 @@ class V4Attention(nn.Module):
                             (B, topk_idx.shape[1], self.head_dim),
                         )
                         ckv = mx.take_along_axis(ckv, idx, axis=1)
+                        _orig_rows = topk_idx[0]  # B==1 경로
                 compressed_k = ckv[:, None, :, :]
                 compressed_v = compressed_k
                 k = mx.concatenate([compressed_k, k], axis=2)
                 v = mx.concatenate([compressed_v, v], axis=2)
                 n_comp = compressed_k.shape[2]
                 if mask is not None:
-                    comp_shape = list(mask.shape)
-                    comp_shape[-1] = n_comp
-                    comp_mask = mx.zeros(comp_shape, dtype=mask.dtype)
+                    # 참조 인과 클램프: 행 i는 i < (p+1)//ratio 일 때만 가시
+                    comp_mask = _pool_causal_mask(
+                        mask, n_comp, offset, S, self.compress_ratio, _orig_rows)
                     mask = mx.concatenate([comp_mask, mask], axis=-1)
 
         # Prepend compressed KV to cached KV for sparse attention
@@ -1001,9 +1055,16 @@ class V4Attention(nn.Module):
             v = mx.concatenate([compressed_v, v], axis=2)
             n_comp = compressed_k.shape[2]
             if mask is not None:
-                comp_shape = list(mask.shape)
-                comp_shape[-1] = n_comp
-                comp_mask = mx.zeros(comp_shape, dtype=mask.dtype)
+                if S > 1:
+                    # 프리필: 참조 인과 클램프 i < (p+1)//ratio
+                    comp_mask = _pool_causal_mask(
+                        mask, n_comp, offset, S, self.compress_ratio,
+                        getattr(self, "_pool_orig_rows", None))
+                else:
+                    # 디코드(S==1): 풀엔 완결 블록만 존재 — 전부 가시가 참조와 동치
+                    comp_shape = list(mask.shape)
+                    comp_shape[-1] = n_comp
+                    comp_mask = mx.zeros(comp_shape, dtype=mask.dtype)
                 mask = mx.concatenate([comp_mask, mask], axis=-1)
 
         out = scaled_dot_product_attention(
