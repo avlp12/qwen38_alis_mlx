@@ -1,0 +1,2 @@
+PROMPT_TPS 531.6 GEN_TPS 30.02 PROMPT_TOKENS 4939
+OUT: The single most important lesson is that **speculative decoding gains are hardware- and context-dependent, and cannot be compared across different systems**—the M3 Ultra's high absolute throughput (74.2 tok/s with 2-box TP2) means its relative gains (1.4×) nou

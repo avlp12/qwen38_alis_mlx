@@ -1,0 +1,36 @@
+
+
+Loading model... |-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/ 
+
+▄▄ ▄▄
+██ ██
+██ ██  ▀▀█▄ ███▄███▄  ▀▀█▄    ▄████ ████▄ ████▄
+██ ██ ▄█▀██ ██ ██ ██ ▄█▀██    ██    ██ ██ ██ ██
+██ ██ ▀█▄██ ██ ██ ██ ▀█▄██ ██ ▀████ ████▀ ████▀
+                                    ██    ██
+                                    ▀▀    ▀▀
+
+build      : b10588-70adb1b4c
+model      : gguf/UD-Q4_K_XL/DeepSeek-V4-Flash-UD-Q4_K_XL-00001-of-00005.gguf
+ftype      : MXFP4 MoE
+modalities : text
+
+available commands:
+  /exit or Ctrl+C     stop or exit
+  /regen              regenerate the last response
+  /clear              clear the chat history
+  /read <file>        add a text file
+  /glob <pattern>     add text files using globbing pattern
+
+
+
+> # Qwen3.8-27B MLX 캠페인 — 총정리 인계 노트 작성 2026-08-17. **사전 지식 0을 전제**로 쓴다. 이 문서만 읽고 캠페인을 이어받을 수 있게 하는 것이 목적이다. AIF 규약([[aif-note-format]])을 따르되, 이 문서는 **지도**이고 **정본은 원장** `~/qwen38/DSPARK_FINDINGS.md`(1,140행, [I1]–[I121] · [RA1]–[RA28] · [CA1]–[CA15] · [PA1]–[PA44] · [J7])이다. 숫자가 어긋나면 원장이 이긴다. --- ## 0. 3분 요약 — 이 � ... (truncated)
+
+[Start thinking]
+
+We need to extract the single most important lesson from the provided text. The text is a detailed handover note for a campaign about Qwen3.8-27B MLX. It covers many lessons, but the question asks for the single most important lesson. The text itself highlights several key lessons: measurement discipline, the importance of EOS-cut, the wedge rule, etc. The "most important" might be the overarching lesson about rigorous measurement and avoiding pitfalls. However, the text explicitly states
+
+[ Prompt: 352.3 t/s | Generation: 26.3 t/s ]
+
+
+Exiting...
