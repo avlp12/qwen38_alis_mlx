@@ -410,3 +410,17 @@ one real lever, as the ablation first showed.
 
 Raw: `bench_batch.log`, `bench_r95.log`, `bench_k4.log`, `sanity_k6.json`, `sanity_k4.json`,
 `break.log`, `ft_break.sh`.
+
+
+## Correction (2026-08-23, after exact LRU replay)
+
+A gate-level instrument later captured the actual decode routing (1,008 steps x 43 layers), and
+replaying that sequence through the exact LRU gives **69.9% hit rate at the default cache — the
+link needs only 22.3 GB/s of its 49.7 GB/s.** The "saturated link / implied hit 22-33%" readings
+above were circular (derived from the saturation assumption) and are withdrawn. What survives:
+the residency-vs-overlap attribution (a measured decomposition) and the iGPU/NPU rejection
+(direct experiments). The corrected cost model, validated on three points and confirmed at a
+fourth (memory-ratio 0.95: predicted 44.9 ms, measured 46.1), is **step = 17.1 ms of fixed GPU
+compute + 0.38 ms per expert miss** — a per-miss latency chain (each layer's routing is known
+only after the previous layer finishes), not a bandwidth wall. Full analysis in the ledger
+([I224]-[I226]); raw routing log in the exp19 records.
