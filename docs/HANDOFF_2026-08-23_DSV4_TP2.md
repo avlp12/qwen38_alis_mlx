@@ -41,3 +41,13 @@
   PR#1189 본 코멘트: github.com/ml-explore/mlx-lm/pull/1189#issuecomment-5386017983
   PR#1189 팔로업:   github.com/ml-explore/mlx-lm/pull/1189#issuecomment-5386141413
 ```
+
+---
+
+# 증보 (2026-08-24 새벽) — 크래시 2회 사후분석·안전 체계·체이닝 상태
+
+- [I5] 크래시 2회(게지히트): 공통 방아쇠 = depth>1 드래프트 체인의 TP2 행. 기전 = macOS 26 TB-RDMA 커널이 행-중-프로세스의 비정상 소멸(kill·자결·종료)에 QP/DMA 미해제 오염으로 반응 → 1차 wired 고갈형 마비 / 2차 드라이버 데드락형 즉시 정지(패닉 로그 없는 정지 서명). 물증: shutdown_stall·ResetCounter·errno 16. 원장 [I268]-[I275].
+- [I6] 절차적 원인 자인: K3 시절 제정된 하네스 규칙(TERM-불응 KILL 금지·웨지-위험 체인 금지)을 세션 중 위반 — "산문 규칙은 코드로만 강제됨" 예언 적중 → tp2_guard.sh로 코드화(R1-R5, R5=위험 실험 ring 전용·jaccl 금지).
+- [I7] 안전 체계 최종: depth-1 하드핀 + 발사 게이트(잔존/wired>120G 거부) + wired 350G 킬스위치 사이드카 + 집합연산 워치독(300s 자결) + tp2_guard.sh. 전부 serving/과 avlp12/dsv4flash_tp2_stack에 영속화.
+- [I8] MiaAI-Lab 조사 결론: 그들의 MTP-5는 단일 mtp.0 체이닝(vLLM), 수용률 0.55-0.72. omlx 패치엔 deepseek_v4 체인이 이미 구현돼 있음(_omlx_mtp_chain=True, head_clone). 남은 문제는 TP2 하 안정성 — 재도전 조건: 싱글박스·비분산·메모리 상한·워치독.
+- [I9] 운영 완비: 양 머신 재부팅 자동화(엡실론 NOPASSWD shutdown/ifconfig/networksetup/fdesetup — authrestart로 FileVault 콘솔 로그인 회피 가능), tbnet 데몬 실전 4회 검증, TB브리지 영구 차단.
