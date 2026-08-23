@@ -2750,3 +2750,5 @@ gesicht ~/venv_mlxjit: brew py3.14 --system-site-packages + ~/qwen38/mlx-0.32.0.
 - [I261] 검증: 4.9K CJK 슬립 0(472.6 tok/s), **19K CJK 슬립 0(421.8 tok/s)** — 수정 전 동일 과제 19K에서 슬립 잔존("单"·"侵袭", rope_w1L.log)했으므로 사실상 직접 A/B. 게시한 제3 편차가 19K 잔여 슬립의 원인이었음이 실증됨. 함정: MTP 복원 팩은 스톡 로더가 거부 → premtp 인덱스 심링크 뷰(mlx4bit_nomtp)로 로드.
 - [I262] 서빙 스택(omlx 오버레이)은 처음부터 무결 확인: Compressor가 freq_scale=compress_ratio 트릭(주파수 ×r ≡ 위치 ×r)으로 풀 rope 적용 + pool_base 오프셋, 인과 풀 마스크는 mask_ratio/mask_q_offset로 커널 융합. 세 편차 모두 PR#1189 기반 빌드 전용이었음 — 이식 불필요.
 - [I263] 박스 비교 확정: 싱글 프리필 472.6(4.9K)/421.8(19K) vs TP2 서빙 544-558(13.9K) ≈ 1.25-1.3×. 후속 후보: PR#1189에 "편차 3 수정으로 19K 슬립 소멸" 팔로업 코멘트(게시는 승인 필요).
+
+- [I264] 마감(2026-08-23 22:05): PR#1189 팔로업 게시(issuecomment-5386141413 — 편차 3 수정으로 19K 슬립 0 실증 보고). TB 서브넷 영속화 데몬 com.alis.tbnet 양 머신 설치(root LaunchDaemon, RunAtLoad, 호스트명 판별 .1/.2, 인터페이스 대기 재시도 24×5s) — 이후 어느 박스가 재부팅돼도 TB IP 자동 복원(브리지 부활은 기 차단). 최종 상태: 3링크 ✓, TP2 다중-슬롯+스냅숏 서빙 :8003 ✓, CRA(tailscale 경유 :8000) ✓.
