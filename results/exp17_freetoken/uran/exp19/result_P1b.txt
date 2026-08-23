@@ -1,0 +1,16 @@
+== READY P1b ==
+== BENCH pf ==
+  [p0] TTFT 10.62s
+  [p1] TTFT 3.01s
+  [p2] TTFT 3.02s
+  [p3] TTFT 3.02s
+  [p4] TTFT 3.00s
+  [p5] TTFT 3.01s
+프리필 TTFT 중앙 3.01s (워밍업 제외 5회)
+PREFILL-BENCH-DONE
+== BENCH sn ==
+sanity-ok
+127 × 89 = 11,303입니다.  
+한국의 수도는 서울(Seoul)입니다.  
+'st
+== RUN-DONE P1b ==

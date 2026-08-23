@@ -1,0 +1,32 @@
+== BOOT-FAIL T1 ==
+Loading experts (parallel):  26%|██▌       | 36.7G/143G [00:32<01:28, 1.30GB/s]Loading experts (parallel):  28%|██▊       | 40.0G/143G [00:34<01:25, 1.29GB/s]Loading experts (parallel):  30%|███       | 43.3G/143G [00:37<01:21, 1.33GB/s]INFO:     127.0.0.1:51198 - "POST /v1/chat/completions HTTP/1.1" 503 Service Unavailable
+Loading experts (parallel):  33%|███▎      | 46.7G/143G [00:40<01:17, 1.34GB/s]Loading experts (parallel):  35%|███▍      | 50.0G/143G [00:42<01:12, 1.39GB/s]Loading experts (parallel):  37%|███▋      | 53.3G/143G [00:44<01:08, 1.42GB/s]Loading experts (parallel):  40%|███▉      | 56.7G/143G [00:47<01:03, 1.47GB/s]Loading experts (parallel):  42%|████▏     | 60.0G/143G [00:49<00:59, 1.50GB/s]INFO:     127.0.0.1:46070 - "POST /v1/chat/completions HTTP/1.1" 503 Service Unavailable
+Loading experts (parallel):  44%|████▍     | 63.3G/143G [00:51<00:56, 1.53GB/s]Loading experts (parallel):  47%|████▋     | 66.7G/143G [00:53<00:53, 1.54GB/s]Loading experts (parallel):  49%|████▉     | 70.0G/143G [00:56<00:51, 1.54GB/s]Loading experts (parallel):  51%|█████     | 73.3G/143G [00:58<00:48, 1.54GB/s]INFO:     127.0.0.1:45226 - "POST /v1/chat/completions HTTP/1.1" 503 Service Unavailable
+Loading experts (parallel):  53%|█████▎    | 76.7G/143G [01:00<00:46, 1.53GB/s]Loading experts (parallel):  56%|█████▌    | 80.0G/143G [01:02<00:42, 1.59GB/s]Loading experts (parallel):  58%|█████▊    | 83.3G/143G [01:04<00:39, 1.64GB/s]Loading experts (parallel):  60%|██████    | 86.7G/143G [01:07<00:38, 1.59GB/s]Loading experts (parallel):  63%|██████▎   | 90.0G/143G [01:09<00:36, 1.58GB/s]INFO:     127.0.0.1:42156 - "POST /v1/chat/completions HTTP/1.1" 503 Service Unavailable
+Loading experts (parallel):  65%|██████▌   | 93.3G/143G [01:11<00:33, 1.60GB/s]Loading experts (parallel):  67%|██████▋   | 96.7G/143G [01:14<00:32, 1.54GB/s]Loading experts (parallel):  70%|██████▉   | 100G/143G [01:16<00:29, 1.59GB/s] Loading experts (parallel):  72%|███████▏  | 103G/143G [01:18<00:26, 1.65GB/s]INFO:     127.0.0.1:41440 - "POST /v1/chat/completions HTTP/1.1" 503 Service Unavailable
+Loading experts (parallel):  74%|███████▍  | 107G/143G [01:20<00:23, 1.67GB/s]Loading experts (parallel):  77%|███████▋  | 110G/143G [01:22<00:20, 1.71GB/s]Loading experts (parallel):  79%|███████▉  | 113G/143G [01:24<00:19, 1.68GB/s]Loading experts (parallel):  81%|████████▏ | 117G/143G [01:26<00:16, 1.69GB/s]Loading experts (parallel):  84%|████████▎ | 120G/143G [01:28<00:13, 1.80GB/s]INFO:     127.0.0.1:58492 - "POST /v1/chat/completions HTTP/1.1" 503 Service Unavailable
+Loading experts (parallel):  86%|████████▌ | 123G/143G [01:30<00:11, 1.79GB/s]Loading experts (parallel):  88%|████████▊ | 127G/143G [01:32<00:10, 1.79GB/s]Loading experts (parallel):  91%|█████████ | 130G/143G [01:34<00:07, 1.84GB/s]Loading experts (parallel):  93%|█████████▎| 133G/143G [01:35<00:05, 2.06GB/s]Loading experts (parallel):  95%|█████████▌| 137G/143G [01:37<00:03, 1.98GB/s]Loading experts (parallel):  98%|█████████▊| 140G/143G [01:38<00:01, 2.27GB/s]Loading experts (parallel): 100%|██████████| 143G/143G [01:39<00:00, 2.69GB/s]                                                                              INFO:     127.0.0.1:38422 - "POST /v1/chat/completions HTTP/1.1" 503 Service Unavailable
+Process freetoken-TP0-scheduler:
+[1m[2026-08-23|11:10:25|FrontendAPI][0m [31mERROR   [0m Backend supervisor: ValueError: DSV4 KV budget 650604543 bytes cannot fit the minimal pool (51 pages incl. the window working-set floor 51); raise memory_ratio or lower max_running_req/max_seq_len
+Traceback (most recent call last):
+  File "/root/.local/share/uv/python/cpython-3.12.14-linux-x86_64-gnu/lib/python3.12/multiprocessing/process.py", line 314, in _bootstrap
+    self.run()
+  File "/root/.local/share/uv/python/cpython-3.12.14-linux-x86_64-gnu/lib/python3.12/multiprocessing/process.py", line 108, in run
+    self._target(*self._args, **self._kwargs)
+  File "/root/ftenv/lib/python3.12/site-packages/freetoken/server/launch.py", line 74, in _run_scheduler
+    scheduler = Scheduler(args)
+                ^^^^^^^^^^^^^^^
+  File "/root/ftenv/lib/python3.12/site-packages/freetoken/scheduler/scheduler.py", line 64, in __init__
+    self.engine = Engine(config)
+                  ^^^^^^^^^^^^^^
+  File "/root/ftenv/lib/python3.12/site-packages/freetoken/engine/engine.py", line 345, in __init__
+    self.num_pages = self._pool_cls.solve_num_pages(config, available_memory)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/root/ftenv/lib/python3.12/site-packages/freetoken/kvcache/dsv4_paged_pool.py", line 345, in solve_num_pages
+    sizes = dsv4_solve_num_pages(
+            ^^^^^^^^^^^^^^^^^^^^^
+  File "/root/ftenv/lib/python3.12/site-packages/freetoken/kvcache/dsv4_cost_model.py", line 253, in dsv4_solve_num_pages
+    raise ValueError(
+ValueError: DSV4 KV budget 650604543 bytes cannot fit the minimal pool (51 pages incl. the window working-set floor 51); raise memory_ratio or lower max_running_req/max_seq_len
+INFO:     127.0.0.1:55102 - "POST /v1/chat/completions HTTP/1.1" 503 Service Unavailable
+== RUN-DONE T1 ==

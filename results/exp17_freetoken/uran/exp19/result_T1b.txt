@@ -1,0 +1,109 @@
+== READY T1b ==
+== BENCH geo ==
+== /v1/stats
+{
+ "instance_id": "b0fa791e-c641-4f35-8aba-40780a90cc0a",
+ "model": {
+  "id": "DeepSeek-V4-Flash",
+  "ctx": 131072,
+  "attn": "mha",
+  "moe": true,
+  "sampling": {
+   "temperature": 1.0,
+   "top_p": 1.0
+  }
+ },
+ "uptime_s": 53,
+ "kv": {
+  "used_pages": 0,
+  "total_pages": 509,
+  "page_size": 1
+ },
+ "mamba": null,
+ "swa": {
+  "used_pages": 0,
+  "total_pages": 101,
+  "page_size": 128
+ },
+ "vram_bytes": 24738004992,
+ "throughput": {
+  "decode_tps": 10.7,
+  "prefill_tps": 12.2
+ },
+ "requests": {
+  "active": 0,
+  "completed": 4,
+  "p95_ms": 39221,
+  "ttft_mean_ms": 0,
+  "prompt_tokens_total": 20,
+  "completion_tokens_total": 4
+ }
+}
+== /v1/cache/status
+{
+ "state": "serving",
+ "last_rebuild": null,
+ "geometry": {
+  "num_pages": 509,
+  "page_size": 128,
+  "moe_cache_size": 896,
+  "num_mamba_slots": 0,
+  "num_experts": 256,
+  "num_moe_layers": 43,
+  "moe_cache_policy": "lru",
+  "unit_bytes": {
+   "kv_per_token": 6888,
+   "moe_per_expert": 13369344,
+   "mamba_per_slot": 0,
+   "swa_per_token": 139392
+  },
+  "swa_full_tokens_ratio": 0.2,
+  "swa_page_size": 128,
+  "num_swa_pages": 101,
+  "cache_budget_bytes": 20339490816,
+  "reasoning": null,
+  "limits": {
+   "kv_tokens": {
+    "min": 6528,
+    "max": 2952887
+   },
+   "moe_experts": {
+    "min": 256,
+    "max": 1521
+   },
+   "mamba_slots": {
+    "min": 0,
+    "max": 0
+   },
+   "swa_tokens": {
+    "min": 6528,
+    "max": 145915
+   }
+  }
+ }
+}
+== BENCH dec ==
+프롬프트 512토큰 · 생성 128 · 3회
+  [r1] TTFT 5.44s · 디코드 17.82 tok/s (126토큰)
+  [r2] TTFT 3.40s · 디코드 18.22 tok/s (126토큰)
+  [r3] TTFT 3.25s · 디코드 18.28 tok/s (126토큰)
+
+최고 디코드 18.28 tok/s
+FT-BENCH-DONE
+== BENCH lc ==
+  [짧은(512) 대조] TTFT 3.21s · 디코드 14.83 tok/s (127토큰)
+  [장문맥 32K] TTFT 32.86s · 디코드 14.17 tok/s (127토큰)
+  [장문맥 32K 재사용(radix)] TTFT 5.07s · 디코드 16.68 tok/s (127토큰)
+LONGCTX-DONE
+== BENCH s8 ==
+  [s0] TTFT 11.3s · 1.85 tok/s (92)
+  [s1] TTFT 15.3s · 2.02 tok/s (83)
+  [s2] TTFT 15.3s · 2.02 tok/s (95)
+  [s3] TTFT 7.3s · 1.72 tok/s (95)
+  [s4] TTFT 19.2s · 2.20 tok/s (95)
+  [s5] TTFT 19.2s · 2.21 tok/s (88)
+  [s6] TTFT 19.3s · 2.21 tok/s (95)
+  [s7] TTFT 19.3s · 2.26 tok/s (80)
+  8세션: 스트림합 16.49 tok/s · 총 723토큰 · 벽시계 61.9s
+SESS8-DONE
+== RUN-DONE T1b ==
