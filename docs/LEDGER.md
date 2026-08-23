@@ -2768,3 +2768,8 @@ gesicht ~/venv_mlxjit: brew py3.14 --system-site-packages + ~/qwen38/mlx-0.32.0.
 - [I271] 부수 성과: 게지히트 tbnet 데몬 첫 실전 성공(3 IP 자동 복원). 엡실론 sudoers NOPASSWD(shutdown·ifconfig·networksetup) 설치 — 웨지 복구 전 구간 자동화 가능. 게지히트 sudoers는 사용자 실행 대기.
 
 - [I272] 마감(2026-08-24 00:2x): 게지히트 클린 재부팅으로 2차 병증(주인 없는 wired 87.6GB→7.6, jaccl 즉교착, en3/en5 플랩) 전부 해소 — 셋 다 병든 드라이버 단일 원인 확증. 잔재였던 엡실론 커널 RDMA QP(RTR errno 16)는 en4 리셋으로도 안 풀려 NOPASSWD 자동 재부팅으로 청소(첫 전자동 웨지 복구: 재부팅→tbnet 3연속 자동복원→jaccl 헬스 9.19GB/s→게이트 경유 재발사). 서빙 검증 1.6s 응답, 게이트+워치독판 가동. 진단 함정: mlx.launch 원격 출력은 버퍼링되어 무한-hang 시 로그 0바이트 — jb.sh에 python -u 필수(적용됨). FileVault 콘솔 로그인이 유일한 수동 잔재(fdesetup authrestart sudoers 제안 대기).
+
+## 2026-08-24 새벽: 2차 크래시 — depth>1 라이브 격리 (I273-I274)
+
+- [I273] omlx 체인 경로(deepseek_v4 _omlx_mtp_chain=True 확인)로 배치 서버 depth 3/5 스윕 중 게지히트 2차 전면 정지(강제 전원 차단). 워치독 300s·발사 게이트로도 못 막음 → 체인 경로에 고속 wired 폭주 등 미지의 급성 실패 모드 존재. 사후 진단: 파일시스템 verifyVolume 통과·wired 7GB 청정·키보드 씹힘은 mDNS(이름 변경 충돌)+netbiosd 폭주로 인한 CPU 경합(치명 손상 아님).
+- [I274/PA34] **depth>1 라이브 TP2 영구 격리**: serve_b.sh에 TP2_MTP_DEPTH=1 하드핀 + wired 350GB 킬스위치 사이드카 추가(양 머신+리포). 체이닝 재도전 조건: 싱글 박스 오프라인 + 메모리 상한 강제 + 프로덕션 완전 분리(별도 세션). MiaAI 대비 개선 기대치는 유효하나 안전이 우선.
