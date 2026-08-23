@@ -2773,3 +2773,6 @@ gesicht ~/venv_mlxjit: brew py3.14 --system-site-packages + ~/qwen38/mlx-0.32.0.
 
 - [I273] omlx 체인 경로(deepseek_v4 _omlx_mtp_chain=True 확인)로 배치 서버 depth 3/5 스윕 중 게지히트 2차 전면 정지(강제 전원 차단). 워치독 300s·발사 게이트로도 못 막음 → 체인 경로에 고속 wired 폭주 등 미지의 급성 실패 모드 존재. 사후 진단: 파일시스템 verifyVolume 통과·wired 7GB 청정·키보드 씹힘은 mDNS(이름 변경 충돌)+netbiosd 폭주로 인한 CPU 경합(치명 손상 아님).
 - [I274/PA34] **depth>1 라이브 TP2 영구 격리**: serve_b.sh에 TP2_MTP_DEPTH=1 하드핀 + wired 350GB 킬스위치 사이드카 추가(양 머신+리포). 체이닝 재도전 조건: 싱글 박스 오프라인 + 메모리 상한 강제 + 프로덕션 완전 분리(별도 세션). MiaAI 대비 개선 기대치는 유효하나 안전이 우선.
+
+- [I275] 재발 기전 물증 확보: shutdown_stall(00:06, 종료 불응 프로세스)·ResetCounter(00:35, 버튼 리셋·패닉 로그 부재=커널 드라이버 데드락). 인과 사슬 확정 — depth>1 행 → 행 프로세스의 모든 소멸 경로(kill·워치독 자결·종료 시퀀스)가 macOS 26 TB-RDMA 커널의 QP/DMA 미해제 오염 유발 → 누적 → wired 고갈형(1차) 또는 드라이버 데드락형(2차) 시스템 정지. errno 16 QP 잔존(재부팅 전용 해소)이 방증.
+- [PA35] 신규 상시 원칙: **위험/미검증 분산 실험은 jaccl(RDMA) 금지, TCP ring 백엔드 전용**(행이 나도 userland라 커널 무해·kill 안전). 검증 완료 구성만 jaccl 승격. 워치독 자결 발생 시 해당 박스 재부팅 권고를 절차화.
