@@ -2766,3 +2766,5 @@ gesicht ~/venv_mlxjit: brew py3.14 --system-site-packages + ~/qwen38/mlx-0.32.0.
 - [I269] 크래시 부팅 후 게지히트 2차 병증: 연산 정상(50-iter 0.12s)이나 주인 없는 wired 87.6GB 잔존 + jaccl 즉교착 + en3/en5 링크 플랩 — "연산-정상·공유이벤트-사망" 웨지 분류(아침 엡실론과 동일). en5 케이블 교차 가설은 철회(같은 병의 증상). 처방 = 클린 재부팅.
 - [I270] 재발 방지 3종 배포(양 머신 + dsv4flash_tp2_stack 푸시): ① serve_batched_tp2.py 집합연산 워치독 — bg.next()가 TP2_WATCHDOG_S(기본 300s) 무응답이면 os._exit(42)로 자결(wired 즉시 반환, TERM-불응 좀비 원천 차단) ② serve_b.sh 발사 게이트 — 잔존 서빙 프로세스(41)·wired>120GB(42) 시 발사 거부 ③ serve.sh depth 가드 — --depth 2-9 즉시 거부(43).
 - [I271] 부수 성과: 게지히트 tbnet 데몬 첫 실전 성공(3 IP 자동 복원). 엡실론 sudoers NOPASSWD(shutdown·ifconfig·networksetup) 설치 — 웨지 복구 전 구간 자동화 가능. 게지히트 sudoers는 사용자 실행 대기.
+
+- [I272] 마감(2026-08-24 00:2x): 게지히트 클린 재부팅으로 2차 병증(주인 없는 wired 87.6GB→7.6, jaccl 즉교착, en3/en5 플랩) 전부 해소 — 셋 다 병든 드라이버 단일 원인 확증. 잔재였던 엡실론 커널 RDMA QP(RTR errno 16)는 en4 리셋으로도 안 풀려 NOPASSWD 자동 재부팅으로 청소(첫 전자동 웨지 복구: 재부팅→tbnet 3연속 자동복원→jaccl 헬스 9.19GB/s→게이트 경유 재발사). 서빙 검증 1.6s 응답, 게이트+워치독판 가동. 진단 함정: mlx.launch 원격 출력은 버퍼링되어 무한-hang 시 로그 0바이트 — jb.sh에 python -u 필수(적용됨). FileVault 콘솔 로그인이 유일한 수동 잔재(fdesetup authrestart sudoers 제안 대기).
