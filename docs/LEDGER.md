@@ -2708,3 +2708,15 @@ gesicht ~/venv_mlxjit: brew py3.14 --system-site-packages + ~/qwen38/mlx-0.32.0.
   배치 서버는 /Users/Shared/tp2/serve_batched_tp2.py 에 계측 포함 동결.** 배치의
   가치(집계 127.7)는 [I238] 실측으로 확정돼 있으므로 재개 가치 있음 — 재개 시 첫
   수: 전체 로그 라인번호 순서로 [gen] 픽업 여부부터 확정.
+
+## 2026-08-23 저녁: 웨지 사후분석·멀티링크 스윕·다중-슬롯 서빙 (I240-I246)
+
+- [I240] 멀티링크 스윕 30분 무진행의 근본 원인 = 엡실론 GPU 웨지. 증거 사슬: iperf 3링크 양방향 42-49Gbit/s 정상 → mlx 링만 교착 → 소켓 큐 판독(엡실론 Recv-Q 15만+ 바이트 미소비, 게지히트 Send-Q 윈도우 폐쇄) → 스택 샘플(엡실론 랭크 메인 스레드 IOSurfaceSharedEvent 영구 대기, 소켓 스레드 유휴) → 엡실론 단독 4096² matmul 25s 무응답.
+- [I241] 웨지 기여 요인: 업타임 6일 + 8/22 qwen38 캠페인 잔존 좀비(prefill_2box.server, RSS 14.4GB). 좀비 제거로 초소형 연산만 부분 해빙, 대형 연산은 재부팅으로만 완치(matmul 0.05s).
+- [I242] 엡실론 재부팅이 Thunderbolt Bridge(bridge0)를 부활시켜 10.0.0.2 중복 보유·10.0.0.1 라우트 탈취. 처방: 양 머신 `networksetup -setnetworkserviceenabled "Thunderbolt Bridge" off` 영구 비활성(TB의 IP 브리지 서비스만 꺼짐, PCIe/SSD/디스플레이 무관).
+- [I243] 멀티링크 스윕 실측(ring, cpi=1): 1케이블 4.35-4.85 GB/s · 2케이블 7.47-7.62(1.6×) · 3케이블 9.25-9.61 GB/s(2.0×, 76.9Gbit/s). 레이턴시 177→190µs 불변(디코드 무영향 예측 적중). 준선형(1→2 +75%, 2→3 +26%) — 링 스트라이핑 CPU 소켓 스레드 또는 TB 컨트롤러 공유 병목 추정. 로그 ~/local_claude_code/tb5_bench/multilink_ips{1,2,3}.log.
+- [RA92] I240+I241: 8/22-23의 serve_batched_tp2 "HTTP→생성루프 인계 소실" 디버깅 마라톤은 코드 버그가 아니라 진행 중이던 GPU 웨지와의 싸움이었음. 건강한 함대에서 WIP 무수정 즉시 동작(동시 6요청 [gen] 삽입 6건).
+- [I244] 서빙 복구 중 함정: 게지히트 재부팅으로 DHCP LAN IP .159→.154 변경 → jaccl 코디네이터 bind 실패(errno 49). 처방: hostfile_jaccl2.json ips를 정적 TB IP(10.0.0.1/2)로 교체.
+- [I245] 단일-슬롯 TP2×MTP 복구 검증: 디코드 41.1 tok/s·MTP accept 93.3%·TTFT 1.5s(재부팅 전 41.5 회복). 페이지캐시 온존으로 로드 7초.
+- [I246] 다중-슬롯 서빙(serve_batched_tp2, max-batch 8) 라이브: 동시 8요청 전부 성공, 집계 113.0 tok/s(벽시계 18.1s, 프리필 포함) = 단일 대비 2.7×, 순수 BatchGenerator 127.7의 88%.
+- [PA31] 다중-슬롯을 :8003 기본 서빙으로 채택. 다음 = 프리픽스 스냅숏 → PR#1189 적대적 검증.
