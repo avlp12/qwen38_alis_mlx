@@ -2688,3 +2688,12 @@ gesicht ~/venv_mlxjit: brew py3.14 --system-site-packages + ~/qwen38/mlx-0.32.0.
   기동: `mlx.launch --hostfile hostfile_jaccl2.json /Users/Shared/tp2/serve.sh`
   (모델명 deepseek-v4-flash-tp2, :8003, depth 1, ctx 32K). 종료: 양 노드
   serve_tp4_dspark pkill. GuruNote(:8002)·CRA 자산 무접촉.
+- **[I238]** **★ FT 메커니즘 재검토 2차 — 연속 배칭이 맥에서 2.3× 실측** (exp23 속행):
+  uran 에서 집계-평평(bs4 동률, 캐시 경합)이던 배칭이 전-상주 맥에서는
+  bs 1/2/4/8 = 40.4/48.4/71.7/**93.5**(2.3×) — 밀집·공유 가중치 상각, 라우티드는
+  부분 상각(MoE 물리로 8× 아닌 2.3×). MTP 는 배치 하 중립(93.2) — 배치가 MTP 의
+  상각 대상을 선점. **운영 지형 확정**: 단일 스트림=TP2×MTP 44.3 / 에이전트 함대=
+  단일-박스 bs8 집계 93.5(두 박스 독립 배치 시 산술 187) / 장문 인제스트=TP2 프리필 869.
+  FT 대차대조표 종결: q*·LRU·스트리밍·hit-D2D=항등0(기결), **배칭=이식 확정(서빙
+  다중-슬롯화 수술 대기), swa_radix=프리픽스 스냅숏 사전으로 이식 대상**([I237] 한계의
+  기성 해법). 다음 수술 우선순위: ①다중-슬롯 서빙 ②프리픽스 스냅숏 ③PR#1189 적대검증.
