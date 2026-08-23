@@ -2569,3 +2569,19 @@ gesicht ~/venv_mlxjit: brew py3.14 --system-site-packages + ~/qwen38/mlx-0.32.0.
   15.4GB 전-상주, FT 캠페인의 비용모델이 가리키는 그 자리). num-tokens 검증([NT200r]):
   `--num-tokens 199936` 로 KV 1,562페이지=200K토큰 확장 실측 확인(디코드 18.07 유지),
   단 200K-KV 구성에서 32K 프리필 행 병리 발견(65K-KV 에선 정상) — FT 잔여 이슈로 기록.
+- **[I231]** **★ oMLX dsv4 스택 실측 + ANE 접합 스코핑** (gesicht, 같은 mlx-community 4bit):
+  oMLX 는 자체 DSv4 완전 구현(mlx-lm 0.31.3 몽키패치: wsdpa 융합 프리필 어텐션·네이티브
+  인덱서 디스패치·MXFP4 switch GEMM·DSpark verify)을 탑재.
+  | | oMLX dsv4 | PR#1189 | 비 |
+  |---|---|---|---|
+  | 프리필(8K 콜드 끝-끝) | **603 tok/s** | 439 | **+37%** (wsdpa 몫) |
+  | 디코드(웜 재확인) | 6.8-7.3 | **30.0** | −77% |
+  ANE 프리필 접합성: 공유 전문가 명명(gate/up/down_proj)·affine 4bit 로 적격 검사는
+  구조 통과하나, ① dsv4 는 clamped swiglu(limit 10) — qwen 용 ANE 융합 프로그램과
+  수학 불일치 → 정확 접합은 GEMM-만 오프로드로 축소, ② Amdahl: 공유 전문가는 프리필의
+  약 8-10% → **상한 +2-5%**. qwen38 의 +26% 는 밀집 MLP 가 프리필을 지배했기 때문 —
+  MoE 에선 전제가 소멸한다.
+- **[PA62]** **ANE 접합은 기각, 진짜 접합 대상은 wsdpa.** 최적 조합 = PR#1189 디코드(30.0)
+  + oMLX wsdpa 프리필(603 급). 둘 다 mlx-lm 위 구현이라 이식 가능성이 높으나 wsdpa 는
+  oMLX 자체 dsv4 모델에 결합돼 있어 어댑터 작업 필요 — 착수는 사용자 판단 사항.
+  (:8004 임시 omlx 는 측정 후 종료, GuruNote :8002·settings.json 무접촉 — 키는 읽기만.)
