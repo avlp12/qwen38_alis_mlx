@@ -2752,3 +2752,10 @@ gesicht ~/venv_mlxjit: brew py3.14 --system-site-packages + ~/qwen38/mlx-0.32.0.
 - [I263] 박스 비교 확정: 싱글 프리필 472.6(4.9K)/421.8(19K) vs TP2 서빙 544-558(13.9K) ≈ 1.25-1.3×. 후속 후보: PR#1189에 "편차 3 수정으로 19K 슬립 소멸" 팔로업 코멘트(게시는 승인 필요).
 
 - [I264] 마감(2026-08-23 22:05): PR#1189 팔로업 게시(issuecomment-5386141413 — 편차 3 수정으로 19K 슬립 0 실증 보고). TB 서브넷 영속화 데몬 com.alis.tbnet 양 머신 설치(root LaunchDaemon, RunAtLoad, 호스트명 판별 .1/.2, 인터페이스 대기 재시도 24×5s) — 이후 어느 박스가 재부팅돼도 TB IP 자동 복원(브리지 부활은 기 차단). 최종 상태: 3링크 ✓, TP2 다중-슬롯+스냅숏 서빙 :8003 ✓, CRA(tailscale 경유 :8000) ✓.
+
+## 2026-08-23 심야 II: PR#1624(kimi_linear KDA eps) 메인테이너 리뷰 대응 (I265-I267)
+
+- [I265] zcbenz CHANGES_REQUESTED(8/22, "정확 동치 성립 안 함·pre-#853 _l2norm 되돌림 선호")에 2-렌즈 적대검증 후 답글 게시(issuecomment-5386238468). 검증 결론: ① sqrt(mean+ε/D)=sqrt(sum+ε)/√D는 대수 항등(mlx Metal/CUDA/CPU 3백엔드 모두 eps를 mean에 가산 — rms_norm.metal:61 등), 잔차 1e-7은 fp32 라운딩 ② 현행 s²/s 거듭제곱은 rms_norm의 √D를 정확히 흡수하는 의도된 설계(FLA는 l2norm 후 q에만 scale) ③ FLA fused_recurrent·chunk 양 경로 모두 sum-안쪽-eps 1e-6(l2norm.py) — "프리필 커널은 다르다" 반격 봉쇄 ④ 되돌림 대상 pre-#853은 x/(‖x‖+ε)로 eps가 sqrt 밖 = 제3 의미론, 근영에서 참조 대비 최대 70배 발산.
+- [CA96] 초안 v1의 "literal 대안 + 기존 스케일 그대로 = 의미 동일" 문구는 레드팀이 격추 — literal l2norm엔 √D 인자가 없어 기존 s²/s를 유지하면 q가 11.3× 과소(실측 91% 오차). 게시본은 스케일 재배치 명시(q에 scale 1회·k 무스케일)로 교정. 메인테이너 반박 게시 전 적대검증 의무의 실증 사례.
+- [I266] 백지 렌즈 순위: B(ε/D 수정)=유일 정답(전 진폭 2e-7) > A(현행, 유효 eps D배=1.28e-4, 소노름에서 최대 91%) > C(부주의 되돌림 시 스코어 128× 붕괴+델타룰 forgetting 무력화). 진폭 현실성은 UNCERTAIN — 답글은 이에 의존하지 않는 구조 유지.
+- [I267] 다음: PR#1624 업스트림 반응 대기(수정 형태 선택 요청 시 즉시 반영).
