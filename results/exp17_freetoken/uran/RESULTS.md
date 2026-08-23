@@ -380,3 +380,33 @@ of the 63 GB/s theoretical, which is ordinary overhead.
 
 **The only real lever left on this box is residency, which means VRAM.** Raw: `bench_auto2.log`,
 `bench_hybrid.log`, `bench_cpul8.log`, `sweep.log`, `ft_sweep.sh`.
+
+## Three breakthrough candidates, measured and closed (2026-08-23)
+
+A first-principles re-audit reduced decode time to two attackable numerators — bytes moved per
+token, and tokens committed per step — after the denominator (path bandwidth) was already proven
+exhausted. All three flag-level candidates were then measured:
+
+| experiment | hypothesis | prediction | measured | verdict |
+|---|---|---|---|---|
+| bs=4 batching | union fetch amortization | aggregate +5 to +43% | **20.7-20.8 = tied with bs=1** (server's own log: 21.15 → 20.84) | rejected |
+| `--memory-ratio 0.95` | residency extension | +4-6% | 1195 → 1317 slots (+10.2%), **21.68 (+1.4%)** | adopted (marginal) |
+| top-k 6 → 4 | bytes/token −33% | +50% | **19.94 (−6.8%)**; greedy sanity output byte-identical to k=6 | rejected (anomaly kept) |
+
+The batching tie is the decisive one: `#running-req: 4` in the engine log confirms continuous
+batching was genuinely active, and step cost still scaled linearly with batch tokens. That
+rejects the compute-bound reading of the 98% GPU utilization (batched GEMM would have lifted
+aggregate) and re-confirms the per-token expert-fetch bound — while the top-k result contradicts
+the pure-bandwidth arithmetic (−33% bytes should have been +50%, not −6.8%) and is recorded as an
+unresolved anomaly (suspects: k=6-specialized fused router/CUDA graph path; a 4.62 → 3.35 GiB
+difference in pre-graph free VRAM; LRU dynamics — though the last cannot explain "slower," only
+"equal"). The quality signal at k=4 was striking: byte-identical greedy output on a four-part
+sanity prompt, so the speed loss is not a quality trade.
+
+**Practical ceiling of this box and stack: 21.4-21.7 tok/s.** The only adoptable improvement is
+`--memory-ratio 0.95` (+1.4%, free). Every other lever — iGPU, NPU, hybrid compute, CPU layers,
+batching, top-k, cache size — has now been measured and closed. Residency (= VRAM) remains the
+one real lever, as the ablation first showed.
+
+Raw: `bench_batch.log`, `bench_r95.log`, `bench_k4.log`, `sanity_k6.json`, `sanity_k4.json`,
+`break.log`, `ft_break.sh`.

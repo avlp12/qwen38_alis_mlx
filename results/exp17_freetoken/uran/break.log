@@ -1,0 +1,19 @@
+[08:38:32] ── A: collect-stats · bs1 대조 + bs4 배치 ──
+✗ A 기동 실패
+[08:56:37] ── B: memory-ratio 0.95 (상주율 확장) ──
+  "moe_cache_size": 1317,
+  "cache_budget_bytes": 20339490816,
+  [r1] TTFT 3.47s · 디코드 21.68 tok/s (126토큰)
+  [r2] TTFT 3.22s · 디코드 21.09 tok/s (126토큰)
+  [r3] TTFT 3.22s · 디코드 20.13 tok/s (126토큰)
+최고 디코드 21.68 tok/s
+[08:58:39] ── C: top-k 6→4 (토큰당 바이트 −33%) ──
+num_experts_per_tok -> 4
+  [r1] TTFT 4.19s · 디코드 19.15 tok/s (126토큰)
+  [r2] TTFT 3.32s · 디코드 18.40 tok/s (120토큰)
+  [r3] TTFT 3.31s · 디코드 19.94 tok/s (126토큰)
+최고 디코드 19.94 tok/s
+sanity_k4 저장      691바이트
+config-restored
+[09:01:44] FT-BREAK-DONE
+config-clean
