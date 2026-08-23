@@ -2798,3 +2798,9 @@ gesicht ~/venv_mlxjit: brew py3.14 --system-site-packages + ~/qwen38/mlx-0.32.0.
 
 - [I287] 2차(on-policy) 판정: 자기-생성 평가셋 d2 95.9%는 과대(자기 텍스트), 신규-프롬프트 라이브는 d2 51.1%/d3 22.2%(기준 43.2/9.8 대비 +7.9/+12.4pt)·tok/cycle 2.25→2.31 — **이 방법의 플래토**. 잔여 격차 해석: 비전문가부 74.3M만으로는 체인 분포 적응에 한계(전문가 LoRA가 다음 수단, 미착수).
 - [I288/PA37] 정렬 mtp 프로덕션 탑재(TP2_MTP_CKPT 사이드카 — 샤딩 전 승격+로드, 양 랭크 동일·락스텝 보존): 단일 e2e 등가, bs8 112.5→116.6(+3.6%). 스펙 디코드 무손실이라 품질 무위험. 최종 서빙 스택: depth-3 고정 체인 + 정렬 mtp + 프리픽스 스냅숏 + 안전 3종(게이트·워치독·킬스위치). 캠페인 종결 — 잔여 후보(전문가 LoRA·d2 수용률 심화)는 별도 세션 백로그.
+
+## 2026-08-24 아침: priming 3중 소생 — 오늘 최대 단일 이득 (I289-I291)
+
+- [I289] **prompt-priming이 legacy-MTP 배치 경로에서 3중으로 죽어 있었음을 해부·전부 수정**: ① `_anchor`가 plain-int offset만 인정 — BatchRotatingKVCache.offset=array([N])이라 침묵 탈락(→ _IntOffsetView 프록시) ② 소생시키면 priming 폴드(mtp_forward L>1)가 wsdpa 오염을 받음 — mtp 문맥(_standard_mask) wsdpa 분기 차단(교사-강제 44%↔97.6% 실측 근거) ③ deepseek_v4의 `mtp_take_primed` 훅이 DSpark 전용이라 legacy에서 무조건 None → 제네릭 심까지 도달 불가(→ 훅-사양 시 폴스루). 진단 기법: 침묵-반환 사슬을 프로브 몽키패치로 한 관문씩 노출.
+- [I290] 실측(싱글박스, 정렬 ckpt, 장문 2.1K): priming OFF d1 81.5%/29.57 tok/s → **ON d1 95.6%(이론 천장 97.6% 근접)/d2 66.7%/d3 34.5%/tok-cycle 2.81/35.30 tok/s(+19.4%)**. 단문(24tok)은 +2.7%로 프롬프트 길이에 비례하는 이득 — 실사용(긴 챗·문서)에서 최대 수혜.
+- [I291/PA38] TP2 서빙 반영 완료: 3중 패치 양 머신 배포, primed=2119 양 랭크 동일 확인(락스텝 보존). 패치 사본 dsv4flash_tp2_stack/patches/. 업스트림(oMLX) 보고 후보 3건: _anchor 배치 내성·wsdpa mtp-문맥 오답·훅 폴스루 — 게시는 승인 시.
