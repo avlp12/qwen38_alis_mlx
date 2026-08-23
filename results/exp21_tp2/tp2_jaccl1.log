@@ -1,0 +1,17 @@
+[32m[INFO] Running /Users/Shared/tp2/run.sh --require-world 2 --max-tokens 48 [0m
+[rank 0] world=2
+[rank 1] world=2
+mx.metal.device_info is deprecated and will be removed in a future version. Use mx.device_info instead.
+[tp2] mtp 샤딩 생략: model has no mtp modules; DSpark head was not attached
+mx.metal.device_info is deprecated and will be removed in a future version. Use mx.device_info instead.
+[tp2-load] layer 8/43
+[tp2-load] layer 16/43
+[tp2-load] layer 24/43
+[tp2-load] layer 32/43
+[tp2-load] layer 40/43
+[tp2] load+shard 6.8s · layers 43 · heads/rank 32 · mtp 0
+[tp2] prompt_tps 41.3 · gen_tps 21.35
+[tp2] OUT: We need to compute 17 * 23. This is a multiplication problem. We can do it mentally: 17 * 20 = 340, plus 17 * 3 = 51, total 391. Alternatively, 
+[tp2-flash-pass]
+[32m[INFO] Node with rank 1 completed [0m
+[32m[INFO] Node with rank 0 completed [0m

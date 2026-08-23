@@ -1,0 +1,8 @@
+{
+  "backend": "jaccl",
+  "envs": ["MLX_METAL_FAST_SYNCH=0"],
+  "hosts": [
+    {"ssh": "127.0.0.1",       "ips": ["192.168.45.159"], "rdma": [null, "rdma_en4"]},
+    {"ssh": "m3ms@10.0.0.2",   "ips": ["192.168.45.90"],  "rdma": ["rdma_en4", null]}
+  ]
+}

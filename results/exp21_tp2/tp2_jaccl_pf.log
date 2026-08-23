@@ -1,0 +1,14 @@
+[rank 0] world=2
+[rank 1] world=2
+mx.metal.device_info is deprecated and will be removed in a future version. Use mx.device_info instead.
+[tp2] mtp 샤딩 생략: model has no mtp modules; DSpark head was not attached
+mx.metal.device_info is deprecated and will be removed in a future version. Use mx.device_info instead.
+[tp2-load] layer 8/43
+[tp2-load] layer 16/43
+[tp2-load] layer 24/43
+[tp2-load] layer 32/43
+[tp2-load] layer 40/43
+[tp2] load+shard 6.7s · layers 43 · heads/rank 32 · mtp 0
+[tp2] prompt_tps 830.8 · gen_tps 20.29
+[tp2] OUT: We need to extract the single most important lesson from the provided text. The text is a comprehensive handover note for a campaign about optimizing Qwen3.8
+[tp2-flash-pass]
