@@ -2759,3 +2759,10 @@ gesicht ~/venv_mlxjit: brew py3.14 --system-site-packages + ~/qwen38/mlx-0.32.0.
 - [CA96] 초안 v1의 "literal 대안 + 기존 스케일 그대로 = 의미 동일" 문구는 레드팀이 격추 — literal l2norm엔 √D 인자가 없어 기존 s²/s를 유지하면 q가 11.3× 과소(실측 91% 오차). 게시본은 스케일 재배치 명시(q에 scale 1회·k 무스케일)로 교정. 메인테이너 반박 게시 전 적대검증 의무의 실증 사례.
 - [I266] 백지 렌즈 순위: B(ε/D 수정)=유일 정답(전 진폭 2e-7) > A(현행, 유효 eps D배=1.28e-4, 소노름에서 최대 91%) > C(부주의 되돌림 시 스코어 128× 붕괴+델타룰 forgetting 무력화). 진폭 현실성은 UNCERTAIN — 답글은 이에 의존하지 않는 구조 유지.
 - [I267] 다음: PR#1624 업스트림 반응 대기(수정 형태 선택 요청 시 즉시 반영).
+
+## 2026-08-23 심야 III: 게지히트 크래시 사후분석·재발 방지 3종 (I268-I271)
+
+- [I268] 게지히트 시스템 전체 감속→정지 크래시의 원인 사슬: ① depth>=2 스펙-체인이 legacy MTP에서 미지원 → 요청이 jaccl 집합연산 내 영구 스핀(TERM 불응 좀비) ② 스윕 정리 루프가 소멸 검증 없이 연쇄 발사(상시 규칙 mlx-bigmodel-harness-rules ④ 위반) → 좀비가 :8003·rdma QP·wired 70GB+ 보유 잔존 ③ 재발사 랭크의 wired 중첩 + 콜드 로드 압박 → wired 물리 한계 → macOS 전면 마비(K3 388GB 누수·localmaxxing 300GB OOM과 동일 병형).
+- [I269] 크래시 부팅 후 게지히트 2차 병증: 연산 정상(50-iter 0.12s)이나 주인 없는 wired 87.6GB 잔존 + jaccl 즉교착 + en3/en5 링크 플랩 — "연산-정상·공유이벤트-사망" 웨지 분류(아침 엡실론과 동일). en5 케이블 교차 가설은 철회(같은 병의 증상). 처방 = 클린 재부팅.
+- [I270] 재발 방지 3종 배포(양 머신 + dsv4flash_tp2_stack 푸시): ① serve_batched_tp2.py 집합연산 워치독 — bg.next()가 TP2_WATCHDOG_S(기본 300s) 무응답이면 os._exit(42)로 자결(wired 즉시 반환, TERM-불응 좀비 원천 차단) ② serve_b.sh 발사 게이트 — 잔존 서빙 프로세스(41)·wired>120GB(42) 시 발사 거부 ③ serve.sh depth 가드 — --depth 2-9 즉시 거부(43).
+- [I271] 부수 성과: 게지히트 tbnet 데몬 첫 실전 성공(3 IP 자동 복원). 엡실론 sudoers NOPASSWD(shutdown·ifconfig·networksetup) 설치 — 웨지 복구 전 구간 자동화 가능. 게지히트 sudoers는 사용자 실행 대기.
