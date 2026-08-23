@@ -1,0 +1,14 @@
+[rank 0] world=2
+[rank 1] world=2
+mx.metal.device_info is deprecated and will be removed in a future version. Use mx.device_info instead.
+[tp2] mtp 샤딩 생략: 'MTPBlock' object has no attribute 'attn'
+mx.metal.device_info is deprecated and will be removed in a future version. Use mx.device_info instead.
+[tp2-load] layer 8/43
+[tp2-load] layer 16/43
+[tp2-load] layer 24/43
+[tp2-load] layer 32/43
+[tp2-load] layer 40/43
+[tp2] load+shard 7.1s · layers 43 · heads/rank 32 · mtp 0
+[tp2] prefill 0.79s · gen_tps 44.28 · mtp=True
+[tp2] OUT: We need to compute 17 * 23. This is a simple multiplication. 17 * 20 = 340, plus 17 * 3 = 51, total 391. Alternatively, 17*23 = (20-3)*23 = 460 - 69 = 391. So answer is 391.</think>17 * 23 = 391<｜end▁
+[tp2-flash-pass]

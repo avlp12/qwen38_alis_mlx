@@ -2645,3 +2645,21 @@ gesicht ~/venv_mlxjit: brew py3.14 --system-site-packages + ~/qwen38/mlx-0.32.0.
   결손은 mlx-community 4bit 이 낙수한 mtp.* 뿐 — uran 원본 체크포인트에서 추출·양자화·
   부착(qwen38 에서 확립한 작업 흐름) 후 omlx DSpark 활성이 정공법. 종이 산술:
   36 × (1+0.82)/(1+드래프트비용비) ≈ **55-62 tok/s** 대역.
+- **[I235]** **★ 투기 기제 전수조사→적용 완결: TP2×MTP 44.3 tok/s** (exp22).
+  적용성 판정: DSpark=Pro-0813 전용(config 판별자·훈련 블록 부재)·DFlash=Laguna/Gemma4
+  어댑터 전용·드래프트-모델=동족 부재 → **MTP-1 자기-스펙 유일 생존**(α=0.819 기실측,
+  omlx 통합·shard_mtp TP-준비). mtp.* 복원: uran 원본에서 1,575텐서 추출 → 백본 미러링
+  (전문가 768 = mxfp4 g32 바이트-이식 · fp8 10 = 디퀀트→어파인4/64 · 원시 19) → PR15
+  sanitize 가 스택킹/개명. 함정 2: gate.bias→e_score_correction_bias 개명, config
+  오버라이드 키는 MTPBlock 의 `.block.` 중첩 경로 필요.
+  | 구성 | 디코드 | |
+  |---|---|---|
+  | 1-박스 plain | 30.0-32.4 | 기준 |
+  | 1-박스 MTP d1 | 39.5 | +22% (greedy 출력 off-대조와 동일 = 무손실) |
+  | TP2 plain(FS=1) | 33.5-36.0 | |
+  | **TP2×MTP d1** | **44.28** | **+37~48%** |
+  depth 1/2/3 = 39.5/39.4/36.7 → d1 확정(체인 α 붕괴, GLM·qwen38 경제학 재현).
+  TP 위 MTP 증폭 확대(+22%→+32%) = qwen38 법칙([two-box.md Addendum]) 재현.
+- **[RA86]** 잔여 사다리: qwen38 완성체의 게이팅+split-K verify 커널 이식 시 2.07× 전례
+  접근 여지. 프리필-무거운 에이전트 서빙은 TP2×MTP(프리필 869 + 디코드 44.3)가 현
+  운영점. 오늘 하루 궤적: 단일 30.0 → 44.3 (+48%), 프리필 439 → 869 (+98%).
