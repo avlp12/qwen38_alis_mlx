@@ -2922,3 +2922,14 @@ gesicht ~/venv_mlxjit: brew py3.14 --system-site-packages + ~/qwen38/mlx-0.32.0.
   2. 서빙 정본 교체: `/Users/Shared/tp2/serve_b.sh`(양 박스) `TP2_MTP_CKPT`를 `ckpt_r6c_real/step5000.safetensors`로 변경
   3. `local-llm-serving` 리포: README "Aligned MTP weights" 절 전면 갱신(진단·실패3종·성공요인·페어드 수치 표), `bench/`에 재사용 가능 스크립트 추가(`dump_hidden_tp2_corpus.py`, `train_align.py`[--real-hidden 반영], `gen_onpolicy_v2/v3.py`, `round6c_real_hidden.sh`) — 병렬 세션의 URAN(RTX5090/WSL2) 트랙 커밋과 리베이스 후 클린 푸시(c545805)
 - [PA46] **TP2 수치드리프트 캠페인 최종 종결.** 원인 규명(K분할 GEMM 부동소수점 비결합성, 문헌 4건 교차확인) → 완화책 3연패(LoRA·노이즈1%·0.3%) → 4갈래 전방위 조사 → 실측잔차 직접학습(6a, 유망) → 코퍼스 확장 2회(6b 4.9배 확정승리, 6c 11배 수익체감 확인) → 8토픽 풀링 페어드 검증(방법론 자체도 견고화: 단일샘플 노이즈 최초 발견·교정) → 프로덕션 승격까지 전 과정 완주. 서빙은 여전히 하차 상태 유지(사용자 재개 지시 시 새 6c 체크포인트로 기동).
+
+## 2026-08-25 II: Fable 오케스트레이터 전환 — 감사 결과·티어 분업 (I316)
+
+- [I316] 사용자 지시로 운영 전환: Fable=검수/판단, Opus=정밀구현, Sonnet=실험실행, Haiku=기계검증. Fable 감사(Sonnet 단독작업 전수) 결과: **치명 결함 없음, 6c 승격 유효**(양박스 sha256 725f3007… 일치 직접 실측). 중요 지적 4건:
+  1. [CA82] 6d 크래시 오진 정정 — 범인은 model.shard()가 아니라 **shard_mtp()의 shard_inplace**(경로기반 전수분할), lora_a(4096→2048)+lora_b(16→8) **이중 손상**. 수정처(병합)는 옳음.
+  2. **검증체제≠프로덕션체제**: 8토픽 검증은 ROWWISE_BATCH=1 강제 bs8인데 serve_b.sh엔 그 env 없음 → 프로덕션 MTP는 bs1 전용. 승격 근거가 프로덕션이 안 도는 체제의 수치 — **bs1 페어드 재확인 필요**(P1).
+  3. 통계 취약: 8토픽 1회, CI 없음, 토픽 5/8·코퍼스 시드가 CS 편중 — 비-CS 일반화 미검증.
+  4. serve_batched_tp2.py에 lora 병합 경로 부재(strict=False로 조용히 버림) — 공용 헬퍼 필수.
+- 6d 병합 수학은 Fable 승인(W' = W + (α/r)(A@B)ᵀ, 형상 실물대조 완료). 구현단서: fp32 델타·동등성 스모크·양쪽 배선·α메타데이터. 전략 유보: 6d 오프라인 d2 0.961<6c 0.968이라 기대값 낮음 — 1회 A/B로 닫고 null이면 LoRA 라인 영구 종결 사전커밋.
+- Recirculation(arXiv 2608.17981) Fable 블라인드 재분석 vs Sonnet 대조: 드래프트=유일 안전 적용점(일치), **백본 적용은 Fable이 전면 기각(Sonnet ②안 격추)** — 근거: 우리 디코드는 사이클당 ~2.35토큰 병렬검증(=미니 프리필)이라 논문의 "디코드 무비용" 전제(토큰단위 AR) 불성립 + 드래프트 입력분포 이동으로 수용률 붕괴 리스크 + greedy-exact 양립불가 + KV 미규정. Fable 추가: 적응변형(750문서 경량 MLP가 풀FT 능가)을 스모크 양성 시 2단계로, 주입점은 체인 k≥2(d2/d3)로 정밀화, 단일토큰 이득 미미 전례로 스모크 음성 종결 확률 낮지 않음 명시.
+- [PA47] 실행 순서 확정(Fable): P4하드닝+P5문서(즉시) → merge 헬퍼+6d A/B 1회 → P1 검증견고화(토픽 16-24개·per-topic·부호검정·**bs1 러너**) → P2 디코드-경로 hidden 캡처(6e — 프리필 캡처와 서빙 디코드 스텝의 결합순서 미스매치 해소, d1 74% 고원 돌파 유력 레버) → Fable 판정 후 P3 Recirculation 여부. 1차 웨이브(Opus 병합구현, Haiku 하드닝) 발사됨.
