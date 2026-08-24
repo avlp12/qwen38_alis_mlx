@@ -2827,3 +2827,7 @@ gesicht ~/venv_mlxjit: brew py3.14 --system-site-packages + ~/qwen38/mlx-0.32.0.
 ## 2026-08-24: 3라운드 LoRA 정렬 — 라이브 검증 실패, 롤백 (I301)
 
 - [I301] shared_experts(mxfp8) LoRA 부착(r=16, on-policy 코퍼스 이어받기 1500스텝): 교사-강제 d2 95.9→96.5%(개선처럼 보임)이나 **라이브는 전 지표 후퇴** — d1 95.6→85.7%, d2 66.7→58.9%, d3 34.5→11.3%, tok/cycle 2.81→2.44. 2차 때 확인한 "자기-생성 평가셋 과대평가" 패턴의 재현. 서빙은 변경 없이 2차(ckpt_r2/step1000) 유지. 원인 추정: 같은 on-policy 코퍼스 재사용으로 신규 정보 없이 과적합, shared_experts 델타가 원본의 미묘한 균형을 훼손. LoRA 경로는 여기서 중단 — 재도전 시 신선한 코퍼스 재생성 + 더 작은 alpha/r + 조기 종료 필요.
+
+## 2026-08-24: 리포 재구성 — DSv4-Flash TP2 캠페인 정본 이전 (I302)
+
+- [I302] `dsv4flash_tp2_stack` → **`avlp12/local-llm-serving`로 개명·재포지셔닝**. 이유: 오늘 캠페인 산출물(tp2_guard.sh 안전 5원칙, TB5 토폴로지 교훈, 발사 게이트·워치독·킬스위치 패턴)이 DSv4-Flash 전용이 아니라 클러스터 서빙 인프라 일반 지식이라 판단. 이 리포(qwen38_alis_mlx)의 LEDGER는 원래 목적(Qwen3.8-27B 캠페인)으로 복귀 — 위 [I240]-[I301]은 히스토리로 보존, 향후 DSv4-Flash/TP2 서빙 캠페인의 정본은 local-llm-serving. 하드웨어 사후분석은 avlp12/local-hardware-failures, 파인튜닝 방법론(VJP 우회 4종+LoRA 실패)은 avlp12/alis-dwq §12에 게시 완료.
