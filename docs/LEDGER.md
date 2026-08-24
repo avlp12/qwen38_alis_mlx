@@ -2831,3 +2831,7 @@ gesicht ~/venv_mlxjit: brew py3.14 --system-site-packages + ~/qwen38/mlx-0.32.0.
 ## 2026-08-24: 리포 재구성 — DSv4-Flash TP2 캠페인 정본 이전 (I302)
 
 - [I302] `dsv4flash_tp2_stack` → **`avlp12/local-llm-serving`로 개명·재포지셔닝**. 이유: 오늘 캠페인 산출물(tp2_guard.sh 안전 5원칙, TB5 토폴로지 교훈, 발사 게이트·워치독·킬스위치 패턴)이 DSv4-Flash 전용이 아니라 클러스터 서빙 인프라 일반 지식이라 판단. 이 리포(qwen38_alis_mlx)의 LEDGER는 원래 목적(Qwen3.8-27B 캠페인)으로 복귀 — 위 [I240]-[I301]은 히스토리로 보존, 향후 DSv4-Flash/TP2 서빙 캠페인의 정본은 local-llm-serving. 하드웨어 사후분석은 avlp12/local-hardware-failures, 파인튜닝 방법론(VJP 우회 4종+LoRA 실패)은 avlp12/alis-dwq §12에 게시 완료.
+
+## 2026-08-24: [I292] 격차 실험 보류 — 서빙 동시 실행 시 GPU 경합으로 비현실적 (I303)
+
+- [I303] 싱글박스↔TP2 d1 격차([I292]) 원인 분리 실험(ring, 정렬ckpt+priming 반영)을 서빙과 동시 실행 시도 — GPU 자원 경합으로 15분+ 경과해도 미완주, 타임아웃 처리(TERM, ring이라 안전). 서빙 자체는 전 구간 무영향(응답 정상 유지), wired 일시 163.5G→89G 자연 안정화(고아 아님, 실험 정리 지연). 판정: 이 실험은 서빙과 GPU를 공유하는 방식으로는 비현실적 — 재도전하려면 완전 격리 시간대(서빙 일시 중단 허가 시) 필요. 라인 보류.
