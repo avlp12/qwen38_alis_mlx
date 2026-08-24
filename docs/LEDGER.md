@@ -2914,3 +2914,11 @@ gesicht ~/venv_mlxjit: brew py3.14 --system-site-packages + ~/qwen38/mlx-0.32.0.
 
 6c가 기준선 대비 확정 우위 유지·소폭 추가개선(6b→6c: tok/cycle +0.34%). 단 6b→6c 개선폭이 기준선→6b 개선폭(1.1%)보다 뚜렷이 작음 — **코퍼스 확장의 수익체감(diminishing returns) 관찰**. d1/d2는 6b/6c 사이 사실상 정체(74%/61% 부근 고원), d3만 계속 증가 추세.
 - [PA45] 6b/6c 둘 다 기준선 대비 확정 우위 — 프로덕션 후보로 6c(가장 최신·최대 코퍼스) 채택 검토. 추가 코퍼스 확장은 수익체감 구간 진입으로 판단, 사용자 판단에 따라 지속 여부 결정.
+
+## 2026-08-25: 캠페인 종결 — 6c 프로덕션 승격 완료 (I315)
+
+- [I315] 사용자 지시("6c로 프로덕션 승격하고 마무리")로 완결 조치 전부 실행:
+  1. HF 게시: `avlp12/dsv4flash-mtp-aligned`에 `mtp_aligned_r6c_step5000.safetensors` 추가(2차 가중치는 롤백용으로 보존)
+  2. 서빙 정본 교체: `/Users/Shared/tp2/serve_b.sh`(양 박스) `TP2_MTP_CKPT`를 `ckpt_r6c_real/step5000.safetensors`로 변경
+  3. `local-llm-serving` 리포: README "Aligned MTP weights" 절 전면 갱신(진단·실패3종·성공요인·페어드 수치 표), `bench/`에 재사용 가능 스크립트 추가(`dump_hidden_tp2_corpus.py`, `train_align.py`[--real-hidden 반영], `gen_onpolicy_v2/v3.py`, `round6c_real_hidden.sh`) — 병렬 세션의 URAN(RTX5090/WSL2) 트랙 커밋과 리베이스 후 클린 푸시(c545805)
+- [PA46] **TP2 수치드리프트 캠페인 최종 종결.** 원인 규명(K분할 GEMM 부동소수점 비결합성, 문헌 4건 교차확인) → 완화책 3연패(LoRA·노이즈1%·0.3%) → 4갈래 전방위 조사 → 실측잔차 직접학습(6a, 유망) → 코퍼스 확장 2회(6b 4.9배 확정승리, 6c 11배 수익체감 확인) → 8토픽 풀링 페어드 검증(방법론 자체도 견고화: 단일샘플 노이즈 최초 발견·교정) → 프로덕션 승격까지 전 과정 완주. 서빙은 여전히 하차 상태 유지(사용자 재개 지시 시 새 6c 체크포인트로 기동).
