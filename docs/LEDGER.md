@@ -3052,3 +3052,8 @@ gesicht ~/venv_mlxjit: brew py3.14 --system-site-packages + ~/qwen38/mlx-0.32.0.
 
 - [I343] **github.com/avlp12/two-macstudio-m3u 공개 게시**(MIT, 55파일): 루트=클러스터 플레이북(TB5 배선·실측 대역·정적IP·tbnet 데몬·mDNS 다이어트·R1-R5·검증 절차), dsv4f/=6단계 재현(가중치→venv+패치→배포→서빙→검증→선택적 MTP 재정렬)+EXPECTED_RESULTS.md 대조표+코퍼스 원본(1.16MB) 포함. 조립 중 발견·정정: ① local-llm-serving의 wsdpa-MTP 패치 사본이 낡음(if False 하드코딩 vs 라이브 OMLX_WSDPA_MTP 게이트) — 설치 venv에서 재추출·양박스 바이트 일치 검증(SHA256SUMS)·정정 커밋 ② 박스B의 omlx 설치 흔적에서 휠 파일명+sha256 확보(상류 휠 대조 가능 — 재현 갭 축소) ③ 가중치는 mlx-community 변환본임을 확인, 혼합정밀 레이아웃(mxfp4 g32×132+affine 4/64×522)을 config.json에서 판독해 문서화. ssh/경로 전부 변수화(${BOX_B} fail-fast). 재현 갭 3건 정직 명시.
 - [PA65] 교훈 게시 4리포 완결: local-llm-serving(PP2 통합+패치 정정), local-hardware-failures(웨지 라운드2 케이스), alis-dwq(§13), two-macstudio-m3u(신규 재현 리포). 남은 진행: PP2 오버헤드 제거 웨이브(GPU).
+
+## 2026-08-25 XXVI: 통합 오버헤드 제거 — e2e 1012 tok/s, 갭 1.8%로 (I344)
+
+- [I344] 1.4s 분해 결과 **최대 항목은 통합 코드가 아니라 GPU 상주 재확립 스톨**: rank1이 파이프라인을 ~2.3s 먼저 끝내고 유휴 대기 → 145GiB 상주 프로세스가 유휴 후 첫 GPU 제출에서 ~0.9s 정지(8×8 mx.eval이 유휴 직후 918.6ms vs 직후 재실행 0.4ms — 결정적 실측). 수정 3종(전부 수치 불활성, greedy 바이트 동일 검증): ① 유휴 대기 중 GPU keep-alive(양 랭크, DSV4_GPU_KEEPALIVE_MS=50) ② 기동 시 웜업(DSV4_WARMUP, GenerationBatch JIT 265→76ms) ③ (검토 후 미채택: 인계 멀티스트림 ~55ms — 리스크 대비 저이득 문서화). **최종 A/B(jaccl): TTFT 15.71→13.79s, e2e 888→1012 tok/s, 스테이지 갭 8.7→1.8%**, 응답 바이트 동일·MTP 동일. 리포 814e74a. 프로덕션 프리필 누적: **544→1012 = 1.86×**.
+- [PA66] 다음 레버 식별: **파이프라인 불균형** — rank1 22층 11.8s vs rank0 21층+수신 13.5s → DSV4_PP2_SPLIT 재튜닝(어느 분할이든 비트정확). GPU 해방 → 대기열 실행: ① SPLIT 스윕 ② 멀티유저 부하 테스트 ③ FAST_SYNCH off A/B(별도).
