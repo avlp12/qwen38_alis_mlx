@@ -3047,3 +3047,8 @@ gesicht ~/venv_mlxjit: brew py3.14 --system-site-packages + ~/qwen38/mlx-0.32.0.
 
 - [I341] 0.32.1+0.32.2 누적 분석(정본 ~/dsv4flash/MLX_0322_IMPACT_2026-08-25.md): **업그레이드 조건부 보류** — 기대이득(#4241 dequant-fp32)은 affine 32-42% 몫 한정(mxfp4 전문가는 omlx 자체 커널), 유일 실측은 ABI 폴백 -7.2%, omlx 상류도 mlx==0.32.0 고정. 재빌드 경로 복구됨(상류 v0.6.3rc2 태그 = 설치본 일치 — /tmp 소실이 무효화되지 않음), 시도 시 0.32.1 우선(0.32.2는 nanobind 2.15 ABI 리스크 추가). gather_qmm #4246 여전히 미해결(0.32.2 수정은 NAX/M5 전용), Group.split #3205 미머지(후보 PR #4218이 4일 전 미머지 종결), jaccl 손상 이슈 #4342는 mlx-lm 레퍼런스 구현 문제로 종결(우리 커스텀 경로 무관).
 - [I342] **★MLX_METAL_FAST_SYNCH 혐의**: 금일 Metal 커맨드버퍼 오류 3회가 상류 기지 결함 클래스와 정합 — #3830 메인테이너 자인("not reliable, no way to fix") 종결, 유사 구성 독립 재현 존재. **프로덕션 serve_b.sh가 3곳에서 =1 설정 중.** 상관 단계([RA]) — [PA64] 현 GPU 웨이브 완료 후 FAST_SYNCH off A/B(프리필·디코드 성능 비용 vs 안정성 소크) 대기열 등재. 금일 웨지/플레이크 빈도의 유력 설명 후보.
+
+## 2026-08-25 XXV: 재현 리포 two-macstudio-m3u 게시 — 교훈 반영 4리포 완결 (I343)
+
+- [I343] **github.com/avlp12/two-macstudio-m3u 공개 게시**(MIT, 55파일): 루트=클러스터 플레이북(TB5 배선·실측 대역·정적IP·tbnet 데몬·mDNS 다이어트·R1-R5·검증 절차), dsv4f/=6단계 재현(가중치→venv+패치→배포→서빙→검증→선택적 MTP 재정렬)+EXPECTED_RESULTS.md 대조표+코퍼스 원본(1.16MB) 포함. 조립 중 발견·정정: ① local-llm-serving의 wsdpa-MTP 패치 사본이 낡음(if False 하드코딩 vs 라이브 OMLX_WSDPA_MTP 게이트) — 설치 venv에서 재추출·양박스 바이트 일치 검증(SHA256SUMS)·정정 커밋 ② 박스B의 omlx 설치 흔적에서 휠 파일명+sha256 확보(상류 휠 대조 가능 — 재현 갭 축소) ③ 가중치는 mlx-community 변환본임을 확인, 혼합정밀 레이아웃(mxfp4 g32×132+affine 4/64×522)을 config.json에서 판독해 문서화. ssh/경로 전부 변수화(${BOX_B} fail-fast). 재현 갭 3건 정직 명시.
+- [PA65] 교훈 게시 4리포 완결: local-llm-serving(PP2 통합+패치 정정), local-hardware-failures(웨지 라운드2 케이스), alis-dwq(§13), two-macstudio-m3u(신규 재현 리포). 남은 진행: PP2 오버헤드 제거 웨이브(GPU).
