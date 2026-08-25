@@ -3071,3 +3071,7 @@ gesicht ~/venv_mlxjit: brew py3.14 --system-site-packages + ~/qwen38/mlx-0.32.0.
 ## 2026-08-25 XXIX: omlx PR #3138 제출 — 프라이밍 활성화 2버그 수정 (I348)
 
 - [I348] **PR https://github.com/jundot/omlx/pull/3138 제출·이슈 링크 완료**(#3079 — 메인테이너 요청 하루 내 이행): 상류 main(0.6.3rc3, 로컬 체크아웃보다 2336커밋 앞) 위에 재기저, 2파일 +250/−27. anchor 언랩(size-1 array offset, sync-free 스캔 유지 — 캡처당 int() 1회), batch>1 forward의 drop_ctx(불변 유지), hook-None 폴스루+_PrimeCtx 가드, 낡은 docstring 정정. 테스트: 신규 스위트 28통과(수정 revert 시 6실패 = 진성 재현), 주변 497통과, CI-동등 전체 10305통과/6m45s(CPU 한정). 재기저 중 발견: ① 상류가 venv 이후 #2909 윈도 재작업을 넣음 — 소박한 venv→main 이식이면 그걸 되돌릴 뻔(rc2-vs-venv diff로 우리 훙크만 분리) ② 이슈에서 약속한 2개 항목(ctx drop·가드)은 venv에 없던 caveat — PR에서 신규 작성 ③ 범위 밖 3파일(wsdpa 게이트·fixed-depth) 제외 확인. 포크 avlp12/omlx 신설. 열린 항목: 첫 기여자 CI 승인 대기(메인테이너 몫).
+
+## 2026-08-25 XXX: 체리픽 1box 검증 통과 — 수치 완전 일치, 성능 파리티 (I349)
+
+- [I349] 체리픽 휠 1box A/B: **수치 게이트 완전 통과**(greedy 32·needle·디코드 64 전부 바이트 동일 — #3960 정확성 수정이 우리 경로에선 분기 미유발, 이분탐색 불필요). 성능: 파리티~근소 우위(디코드 +1.9%, 프리필은 이상치 1회를 확증 라운드로 배제하면 동급/근소 우위 — 에이전트가 이상치를 정직하게 표기하고 추가 라운드로 강건화). #4241 기대이득(+2~11%)은 미관측 — 예측대로 우리 MoE가 mlx gather 경로를 우회하는 탓. **실질 가치 = 무비용 안정성**(#3675 throw-후 상태오염 수정 + Metal 가드 6종이 성능 손실 0으로 편입). 판정: 승격 후보, TP2 검증 대기. 프로덕션 venv sha256 무변경 확인.
